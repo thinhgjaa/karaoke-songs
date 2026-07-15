@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-slate-950 text-slate-100 font-sans antialiased;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(120, 60, 220, 0.25), transparent),
+    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(236, 72, 153, 0.12), transparent);
+  background-attachment: fixed;
+  min-height: 100dvh;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(71 85 105 / 0.5);
+  border-radius: 8px;
+}

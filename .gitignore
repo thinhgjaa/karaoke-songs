@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Env - KHÔNG BAO GIỜ commit file .env (chứa thông tin cấu hình Supabase)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/
+.idea/
+*.suo
+
+# OS
+.DS_Store
+Thumbs.db
