@@ -5,8 +5,10 @@ import TagPicker from './TagPicker'
 
 interface SongFormModalProps {
   song: Song | null
+  artists: Tag[]
   genres: Tag[]
   moods: Tag[]
+  onCreateArtist: (name: string) => Promise<void>
   onCreateGenre: (name: string) => Promise<void>
   onCreateMood: (name: string) => Promise<void>
   onSave: (input: SongInput) => Promise<void>
@@ -15,20 +17,22 @@ interface SongFormModalProps {
 
 export default function SongFormModal({
   song,
+  artists,
   genres,
   moods,
+  onCreateArtist,
   onCreateGenre,
   onCreateMood,
   onSave,
   onClose,
 }: SongFormModalProps) {
   const [title, setTitle] = useState(song?.title ?? '')
-  const [artist, setArtist] = useState(song?.artist ?? '')
   const [youtubeUrl, setYoutubeUrl] = useState(song?.youtube_url ?? '')
   const [lyrics, setLyrics] = useState(song?.lyrics ?? '')
   const [notes, setNotes] = useState(song?.notes ?? '')
   const [rating, setRating] = useState(song?.rating ?? 0)
   const [isDuet, setIsDuet] = useState(song?.is_duet ?? false)
+  const [artistIds, setArtistIds] = useState<string[]>(song?.artists.map((a) => a.id) ?? [])
   const [genreIds, setGenreIds] = useState<string[]>(song?.genres.map((g) => g.id) ?? [])
   const [moodIds, setMoodIds] = useState<string[]>(song?.moods.map((m) => m.id) ?? [])
   const [saving, setSaving] = useState(false)
@@ -46,12 +50,12 @@ export default function SongFormModal({
     try {
       await onSave({
         title,
-        artist,
         youtube_url: youtubeUrl,
         lyrics,
         notes,
         rating,
         is_duet: isDuet,
+        artistIds,
         genreIds,
         moodIds,
       })
@@ -93,15 +97,14 @@ export default function SongFormModal({
             />
           </div>
 
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-300">Ca sĩ</label>
-            <input
-              value={artist}
-              onChange={(e) => setArtist(e.target.value)}
-              placeholder="Ví dụ: Nguyễn Đức Cường"
-              className={inputClass}
-            />
-          </div>
+          <TagPicker
+            label="Ca sĩ (chọn được nhiều)"
+            tags={artists}
+            selectedIds={artistIds}
+            onToggle={(id) => toggle(artistIds, setArtistIds, id)}
+            onCreate={onCreateArtist}
+            accent="sky"
+          />
 
           <TagPicker
             label="Thể loại (chọn được nhiều)"

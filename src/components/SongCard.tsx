@@ -15,6 +15,7 @@ export default function SongCard({ song, index, onEdit, onDelete }: SongCardProp
   const [thumbBroken, setThumbBroken] = useState(false)
   const hasDetails = Boolean(song.lyrics || song.notes)
   const thumbnail = thumbBroken ? null : getYoutubeThumbnail(song.youtube_url)
+  const artistNames = song.artists.map((a) => a.name).join(', ')
 
   return (
     <div
@@ -49,7 +50,7 @@ export default function SongCard({ song, index, onEdit, onDelete }: SongCardProp
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="truncate font-semibold text-white">{song.title}</h3>
-            {song.artist && <p className="mt-0.5 truncate text-sm text-slate-400">{song.artist}</p>}
+            {artistNames && <p className="mt-0.5 truncate text-sm text-slate-400">{artistNames}</p>}
           </div>
           <StarRating value={song.rating} />
         </div>

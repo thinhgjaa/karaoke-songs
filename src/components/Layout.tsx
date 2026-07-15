@@ -26,7 +26,7 @@ export default function Layout() {
               Bài hát
             </NavLink>
             <NavLink to="/the-loai" className={navLinkClass}>
-              Thể loại &amp; Tâm trạng
+              Ca sĩ, Thể loại &amp; Tâm trạng
             </NavLink>
           </nav>
           <button

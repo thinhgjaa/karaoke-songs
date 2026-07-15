@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { createTag, deleteTag, fetchTags, renameTag } from '../lib/api'
+import { createTag, deleteTag, fetchTags, renameTag, type TagTable } from '../lib/api'
 import type { Tag } from '../lib/types'
 
 interface TagSectionProps {
-  table: 'genres' | 'moods'
+  table: TagTable
   title: string
   hint: string
-  accent: 'violet' | 'pink'
+  accent: 'violet' | 'pink' | 'sky'
 }
 
 function TagSection({ table, title, hint, accent }: TagSectionProps) {
@@ -16,10 +16,11 @@ function TagSection({ table, title, hint, accent }: TagSectionProps) {
   const [editName, setEditName] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  const badgeClass =
-    accent === 'violet'
-      ? 'border-violet-500/30 bg-violet-500/10 text-violet-200'
-      : 'border-pink-500/30 bg-pink-500/10 text-pink-200'
+  const badgeClass = {
+    violet: 'border-violet-500/30 bg-violet-500/10 text-violet-200',
+    pink: 'border-pink-500/30 bg-pink-500/10 text-pink-200',
+    sky: 'border-sky-500/30 bg-sky-500/10 text-sky-200',
+  }[accent]
 
   const reload = useCallback(async () => {
     try {
@@ -148,9 +149,15 @@ export default function TagsPage() {
   return (
     <div>
       <h1 className="mb-5 text-xl font-bold">
-        Thể loại &amp; <span className="text-gradient">Tâm trạng</span>
+        Ca sĩ, Thể loại &amp; <span className="text-gradient">Tâm trạng</span>
       </h1>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <TagSection
+          table="artists"
+          title="Ca sĩ"
+          hint="Ví dụ: Sơn Tùng M-TP, Mỹ Tâm, Đen Vâu…"
+          accent="sky"
+        />
         <TagSection
           table="genres"
           title="Thể loại"

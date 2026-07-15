@@ -9,6 +9,7 @@ type ModalState = { open: false } | { open: true; song: Song | null }
 
 export default function SongsPage() {
   const [songs, setSongs] = useState<Song[]>([])
+  const [artists, setArtists] = useState<Tag[]>([])
   const [genres, setGenres] = useState<Tag[]>([])
   const [moods, setMoods] = useState<Tag[]>([])
   const [loading, setLoading] = useState(true)
@@ -24,12 +25,14 @@ export default function SongsPage() {
 
   const reload = useCallback(async () => {
     try {
-      const [songData, genreData, moodData] = await Promise.all([
+      const [songData, artistData, genreData, moodData] = await Promise.all([
         fetchSongs(),
+        fetchTags('artists'),
         fetchTags('genres'),
         fetchTags('moods'),
       ])
       setSongs(songData)
+      setArtists(artistData)
       setGenres(genreData)
       setMoods(moodData)
       setError(null)
@@ -44,20 +47,12 @@ export default function SongsPage() {
     void reload()
   }, [reload])
 
-  const artists = useMemo(() => {
-    const names = new Set<string>()
-    for (const song of songs) {
-      const name = song.artist.trim()
-      if (name) names.add(name)
-    }
-    return [...names].sort((a, b) => a.localeCompare(b, 'vi'))
-  }, [songs])
-
   const filtered = useMemo(
     () =>
       songs.filter((song) => {
-        if (!matchesSearch(`${song.title} ${song.artist}`, search)) return false
-        if (artistFilter && song.artist.trim() !== artistFilter) return false
+        const artistNames = song.artists.map((a) => a.name).join(' ')
+        if (!matchesSearch(`${song.title} ${artistNames}`, search)) return false
+        if (artistFilter && !song.artists.some((a) => a.id === artistFilter)) return false
         if (genreFilter && !song.genres.some((g) => g.id === genreFilter)) return false
         if (moodFilter && !song.moods.some((m) => m.id === moodFilter)) return false
         if (duetFilter === 'duet' && !song.is_duet) return false
@@ -85,6 +80,11 @@ export default function SongsPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không xóa được bài hát.')
     }
+  }
+
+  async function handleCreateArtist(name: string) {
+    await createTag('artists', name)
+    setArtists(await fetchTags('artists'))
   }
 
   async function handleCreateGenre(name: string) {
@@ -129,9 +129,9 @@ export default function SongsPage() {
         <div className="flex flex-wrap gap-2">
           <select value={artistFilter} onChange={(e) => setArtistFilter(e.target.value)} className={selectClass}>
             <option value="">Mọi ca sĩ</option>
-            {artists.map((name) => (
-              <option key={name} value={name}>
-                {name}
+            {artists.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
               </option>
             ))}
           </select>
@@ -219,8 +219,10 @@ export default function SongsPage() {
       {modal.open && (
         <SongFormModal
           song={modal.song}
+          artists={artists}
           genres={genres}
           moods={moods}
+          onCreateArtist={handleCreateArtist}
           onCreateGenre={handleCreateGenre}
           onCreateMood={handleCreateMood}
           onSave={handleSave}

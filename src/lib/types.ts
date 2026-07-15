@@ -6,25 +6,25 @@ export interface Tag {
 export interface Song {
   id: string
   title: string
-  artist: string
   youtube_url: string
   lyrics: string
   notes: string
   rating: number
   is_duet: boolean
   created_at: string
+  artists: Tag[]
   genres: Tag[]
   moods: Tag[]
 }
 
 export interface SongInput {
   title: string
-  artist: string
   youtube_url: string
   lyrics: string
   notes: string
   rating: number
   is_duet: boolean
+  artistIds: string[]
   genreIds: string[]
   moodIds: string[]
 }

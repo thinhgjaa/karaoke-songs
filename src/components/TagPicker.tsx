@@ -7,7 +7,7 @@ interface TagPickerProps {
   selectedIds: string[]
   onToggle: (id: string) => void
   onCreate: (name: string) => Promise<void>
-  accent: 'violet' | 'pink'
+  accent: 'violet' | 'pink' | 'sky'
 }
 
 const accentClasses = {
@@ -18,6 +18,10 @@ const accentClasses = {
   pink: {
     active: 'border-pink-500 bg-pink-500/20 text-pink-200',
     ring: 'focus:border-pink-500 focus:ring-pink-500/30',
+  },
+  sky: {
+    active: 'border-sky-500 bg-sky-500/20 text-sky-200',
+    ring: 'focus:border-sky-500 focus:ring-sky-500/30',
   },
 }
 
