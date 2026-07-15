@@ -15,8 +15,10 @@ export default function SongsPage() {
   const [error, setError] = useState<string | null>(null)
 
   const [search, setSearch] = useState('')
+  const [artistFilter, setArtistFilter] = useState('')
   const [genreFilter, setGenreFilter] = useState('')
   const [moodFilter, setMoodFilter] = useState('')
+  const [duetFilter, setDuetFilter] = useState('')
   const [minRating, setMinRating] = useState(0)
   const [modal, setModal] = useState<ModalState>({ open: false })
 
@@ -42,16 +44,28 @@ export default function SongsPage() {
     void reload()
   }, [reload])
 
+  const artists = useMemo(() => {
+    const names = new Set<string>()
+    for (const song of songs) {
+      const name = song.artist.trim()
+      if (name) names.add(name)
+    }
+    return [...names].sort((a, b) => a.localeCompare(b, 'vi'))
+  }, [songs])
+
   const filtered = useMemo(
     () =>
       songs.filter((song) => {
         if (!matchesSearch(`${song.title} ${song.artist}`, search)) return false
+        if (artistFilter && song.artist.trim() !== artistFilter) return false
         if (genreFilter && !song.genres.some((g) => g.id === genreFilter)) return false
         if (moodFilter && !song.moods.some((m) => m.id === moodFilter)) return false
+        if (duetFilter === 'duet' && !song.is_duet) return false
+        if (duetFilter === 'solo' && song.is_duet) return false
         if (minRating > 0 && song.rating < minRating) return false
         return true
       }),
-    [songs, search, genreFilter, moodFilter, minRating],
+    [songs, search, artistFilter, genreFilter, moodFilter, duetFilter, minRating],
   )
 
   async function handleSave(input: SongInput) {
@@ -90,7 +104,9 @@ export default function SongsPage() {
     <div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold">Bài hát của tôi</h1>
+          <h1 className="text-xl font-bold">
+            Bài hát <span className="text-gradient">của tôi</span>
+          </h1>
           <p className="text-sm text-slate-400">
             {songs.length} bài{filtered.length !== songs.length ? ` · đang hiện ${filtered.length}` : ''}
           </p>
@@ -111,6 +127,14 @@ export default function SongsPage() {
           className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30 sm:flex-1"
         />
         <div className="flex flex-wrap gap-2">
+          <select value={artistFilter} onChange={(e) => setArtistFilter(e.target.value)} className={selectClass}>
+            <option value="">Mọi ca sĩ</option>
+            {artists.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
           <select value={genreFilter} onChange={(e) => setGenreFilter(e.target.value)} className={selectClass}>
             <option value="">Mọi thể loại</option>
             {genres.map((g) => (
@@ -126,6 +150,11 @@ export default function SongsPage() {
                 {m.name}
               </option>
             ))}
+          </select>
+          <select value={duetFilter} onChange={(e) => setDuetFilter(e.target.value)} className={selectClass}>
+            <option value="">Đơn ca &amp; song ca</option>
+            <option value="duet">👥 Hát cặp được</option>
+            <option value="solo">Chỉ hát đơn</option>
           </select>
           <select
             value={minRating}
@@ -149,20 +178,37 @@ export default function SongsPage() {
       )}
 
       {loading ? (
-        <p className="py-16 text-center text-sm text-slate-400">Đang tải…</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="overflow-hidden rounded-2xl border border-white/10">
+              <div className="skeleton h-36 w-full" />
+              <div className="space-y-2.5 p-4">
+                <div className="skeleton h-4 w-2/3 rounded-md" />
+                <div className="skeleton h-3 w-1/3 rounded-md" />
+                <div className="flex gap-1.5 pt-1">
+                  <div className="skeleton h-5 w-16 rounded-full" />
+                  <div className="skeleton h-5 w-14 rounded-full" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-white/10 py-16 text-center">
-          <p className="text-3xl">🎵</p>
-          <p className="mt-2 text-sm text-slate-400">
+        <div className="animate-fade-up rounded-2xl border border-dashed border-white/10 bg-white/[0.02] py-20 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 text-3xl">
+            🎵
+          </div>
+          <p className="text-sm text-slate-400">
             {songs.length === 0 ? 'Chưa có bài hát nào. Bấm "Thêm bài hát" để bắt đầu!' : 'Không tìm thấy bài nào khớp bộ lọc.'}
           </p>
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {filtered.map((song) => (
+          {filtered.map((song, index) => (
             <SongCard
               key={song.id}
               song={song}
+              index={index}
               onEdit={() => setModal({ open: true, song })}
               onDelete={() => void handleDelete(song)}
             />

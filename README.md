@@ -29,9 +29,11 @@ Web app cá nhân để lưu trữ và quản lý những bài hát karaoke yêu
 
 ### Bước 2: Tạo bảng database (chạy 1 lần)
 
+SQL được chia thành các file migration có đánh version trong thư mục [`supabase/migrations/`](supabase/migrations/) (xem chi tiết quy ước ở [`supabase/README.md`](supabase/README.md)).
+
 1. Trong Supabase Dashboard → **SQL Editor** (sidebar trái) → **New query**.
-2. Mở file [`supabase/schema.sql`](supabase/schema.sql) trong repo này, copy **toàn bộ** nội dung, paste vào và bấm **Run**.
-3. Xong! Toàn bộ bảng, index và chính sách bảo mật RLS đã được tạo.
+2. Mở file [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql) trong repo này, copy **toàn bộ** nội dung, paste vào và bấm **Run**. Nếu sau này có thêm file migration mới (`0002_…`, `0003_…`), chạy lần lượt theo thứ tự version, mỗi file 1 lần.
+3. Xong! Toàn bộ bảng, index và chính sách bảo mật RLS đã được tạo. Kiểm tra version database bằng: `select * from public.schema_migrations;`
 
 ### Bước 3: Tạo tài khoản đăng nhập của bạn và khóa đăng ký
 

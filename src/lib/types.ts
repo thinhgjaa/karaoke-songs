@@ -11,6 +11,7 @@ export interface Song {
   lyrics: string
   notes: string
   rating: number
+  is_duet: boolean
   created_at: string
   genres: Tag[]
   moods: Tag[]
@@ -23,6 +24,7 @@ export interface SongInput {
   lyrics: string
   notes: string
   rating: number
+  is_duet: boolean
   genreIds: string[]
   moodIds: string[]
 }

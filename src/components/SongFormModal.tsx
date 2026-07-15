@@ -28,6 +28,7 @@ export default function SongFormModal({
   const [lyrics, setLyrics] = useState(song?.lyrics ?? '')
   const [notes, setNotes] = useState(song?.notes ?? '')
   const [rating, setRating] = useState(song?.rating ?? 0)
+  const [isDuet, setIsDuet] = useState(song?.is_duet ?? false)
   const [genreIds, setGenreIds] = useState<string[]>(song?.genres.map((g) => g.id) ?? [])
   const [moodIds, setMoodIds] = useState<string[]>(song?.moods.map((m) => m.id) ?? [])
   const [saving, setSaving] = useState(false)
@@ -50,6 +51,7 @@ export default function SongFormModal({
         lyrics,
         notes,
         rating,
+        is_duet: isDuet,
         genreIds,
         moodIds,
       })
@@ -72,7 +74,7 @@ export default function SongFormModal({
     >
       <form
         onSubmit={handleSubmit}
-        className="my-8 w-full max-w-lg rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl"
+        className="animate-pop-in my-8 w-full max-w-lg rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl"
       >
         <h2 className="mb-5 text-lg font-bold">{song ? 'Sửa bài hát' : 'Thêm bài hát mới'}</h2>
 
@@ -153,6 +155,18 @@ export default function SongFormModal({
               className={inputClass}
             />
           </div>
+
+          <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 transition hover:border-cyan-500/40">
+            <input
+              type="checkbox"
+              checked={isDuet}
+              onChange={(e) => setIsDuet(e.target.checked)}
+              className="h-4 w-4 shrink-0 accent-cyan-500"
+            />
+            <span className="text-sm font-medium text-slate-300">
+              Bài này hát cặp (song ca) được 👥
+            </span>
+          </label>
 
           <div>
             <span className="mb-1.5 block text-sm font-medium text-slate-300">Mức độ yêu thích</span>

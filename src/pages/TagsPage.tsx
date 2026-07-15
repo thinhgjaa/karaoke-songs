@@ -147,7 +147,9 @@ function TagSection({ table, title, hint, accent }: TagSectionProps) {
 export default function TagsPage() {
   return (
     <div>
-      <h1 className="mb-5 text-xl font-bold">Thể loại &amp; Tâm trạng</h1>
+      <h1 className="mb-5 text-xl font-bold">
+        Thể loại &amp; <span className="text-gradient">Tâm trạng</span>
+      </h1>
       <div className="grid gap-4 md:grid-cols-2">
         <TagSection
           table="genres"

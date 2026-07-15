@@ -1,8 +1,22 @@
 -- =====================================================================
--- KHO BÀI HÁT KARAOKE - Database Schema
+-- MIGRATION 0001: Khởi tạo database (bảng, index, trigger, RLS)
 -- Cách dùng: Supabase Dashboard -> SQL Editor -> New query
 --            -> paste toàn bộ file này -> Run (chạy 1 lần duy nhất)
 -- =====================================================================
+
+-- ---------------------------------------------------------------------
+-- 0. BẢNG THEO DÕI VERSION MIGRATION
+--    Mỗi file migration khi chạy xong sẽ tự ghi version vào đây.
+--    Nhờ đó biết được database đang ở version nào, đã chạy file nào.
+-- ---------------------------------------------------------------------
+create table if not exists public.schema_migrations (
+  version    text primary key,
+  name       text not null,
+  applied_at timestamptz not null default now()
+);
+
+alter table public.schema_migrations enable row level security;
+revoke all on public.schema_migrations from anon, authenticated;
 
 -- ---------------------------------------------------------------------
 -- 1. BẢNG DỮ LIỆU
@@ -147,3 +161,9 @@ create policy "song_moods_delete" on public.song_moods for delete to authenticat
 -- 5. CHẶN HOÀN TOÀN ROLE ANON (chưa đăng nhập thì không làm được gì)
 -- ---------------------------------------------------------------------
 revoke all on all tables in schema public from anon;
+
+-- ---------------------------------------------------------------------
+-- 6. GHI NHẬN VERSION ĐÃ CHẠY
+-- ---------------------------------------------------------------------
+insert into public.schema_migrations (version, name)
+values ('0001', 'init');

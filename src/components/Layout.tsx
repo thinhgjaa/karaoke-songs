@@ -13,9 +13,13 @@ export default function Layout() {
     <div className="mx-auto min-h-dvh max-w-5xl px-4 pb-16">
       <header className="sticky top-0 z-30 -mx-4 mb-6 border-b border-white/5 bg-slate-950/80 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🎤</span>
-            <span className="hidden text-sm font-bold sm:block">Kho bài hát Karaoke</span>
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 text-base shadow-lg shadow-violet-900/40">
+              🎤
+            </span>
+            <span className="hidden text-sm font-bold sm:block">
+              Kho bài hát <span className="text-gradient">Karaoke</span>
+            </span>
           </div>
           <nav className="flex items-center gap-1">
             <NavLink to="/" end className={navLinkClass}>

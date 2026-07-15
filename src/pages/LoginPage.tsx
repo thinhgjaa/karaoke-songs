@@ -23,11 +23,15 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-dvh items-center justify-center px-4">
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-sm animate-fade-up">
         <div className="mb-8 text-center">
-          <div className="mb-3 text-5xl">🎤</div>
-          <h1 className="text-2xl font-bold tracking-tight">Kho bài hát Karaoke</h1>
-          <p className="mt-1 text-sm text-slate-400">Đăng nhập để tiếp tục</p>
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-600 to-fuchsia-600 text-4xl shadow-2xl shadow-violet-900/50">
+            🎤
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight">
+            Kho bài hát <span className="text-gradient">Karaoke</span>
+          </h1>
+          <p className="mt-2 text-sm text-slate-400">Đăng nhập để tiếp tục</p>
         </div>
 
         {!isSupabaseConfigured && (

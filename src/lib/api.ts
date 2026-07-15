@@ -9,6 +9,7 @@ interface SongRow {
   lyrics: string
   notes: string
   rating: number
+  is_duet: boolean
   created_at: string
   genres: Tag[]
   moods: Tag[]
@@ -17,7 +18,7 @@ interface SongRow {
 export async function fetchSongs(): Promise<Song[]> {
   const { data, error } = await supabase
     .from('songs')
-    .select('id, title, artist, youtube_url, lyrics, notes, rating, created_at, genres(id, name), moods(id, name)')
+    .select('id, title, artist, youtube_url, lyrics, notes, rating, is_duet, created_at, genres(id, name), moods(id, name)')
     .order('created_at', { ascending: false })
   if (error) throw error
   return (data as SongRow[]) ?? []
@@ -75,6 +76,7 @@ function songFields(input: SongInput) {
     lyrics: input.lyrics,
     notes: input.notes,
     rating: input.rating,
+    is_duet: input.is_duet,
   }
 }
 
