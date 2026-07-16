@@ -120,12 +120,26 @@ export default function SongsPage() {
       </div>
 
       <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Tìm tên bài hát, ca sĩ (không cần dấu)…"
-          className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30 sm:flex-1"
-        />
+        <div className="relative w-full sm:flex-1">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Tìm tên bài hát, ca sĩ (không cần dấu)…"
+            className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2 pr-9 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              aria-label="Xóa tìm kiếm"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:bg-white/10 hover:text-slate-100"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            </button>
+          )}
+        </div>
         <div className="flex flex-wrap gap-2">
           <select value={artistFilter} onChange={(e) => setArtistFilter(e.target.value)} className={selectClass}>
             <option value="">Mọi ca sĩ</option>

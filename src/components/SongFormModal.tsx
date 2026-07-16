@@ -71,14 +71,14 @@ export default function SongFormModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-50 flex overflow-y-auto bg-black/60 p-4 backdrop-blur-sm"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
     >
       <form
         onSubmit={handleSubmit}
-        className="animate-pop-in my-8 w-full max-w-lg rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl"
+        className="animate-pop-in m-auto w-full max-w-lg rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl"
       >
         <h2 className="mb-5 text-lg font-bold">{song ? 'Sửa bài hát' : 'Thêm bài hát mới'}</h2>
 
