@@ -1,0 +1,48 @@
+name: Keep Supabase awake
+
+# Mỗi đêm 0:00 giờ Việt Nam (UTC+7 = 17:00 UTC ngày hôm trước)
+# ping REST API để project Supabase free không bị ngủ vì ít truy cập.
+on:
+  schedule:
+    - cron: '0 17 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "Thiếu secrets VITE_SUPABASE_URL hoặc VITE_SUPABASE_ANON_KEY"
+            exit 1
+          fi
+
+          # Health check Auth (không cần JWT người dùng)
+          code=$(curl -sS -o /tmp/sb-health.txt -w "%{http_code}" \
+            "${SUPABASE_URL%/}/auth/v1/health" \
+            -H "apikey: ${SUPABASE_ANON_KEY}")
+
+          echo "Auth health HTTP $code"
+          cat /tmp/sb-health.txt || true
+          echo
+
+          # Nhẹ nhàng chạm bảng songs (RLS có thể trả 401/empty — vẫn tính là ping thành công nếu API phản hồi)
+          code2=$(curl -sS -o /tmp/sb-songs.txt -w "%{http_code}" \
+            "${SUPABASE_URL%/}/rest/v1/songs?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -H "Accept: application/json")
+
+          echo "Songs ping HTTP $code2"
+          cat /tmp/sb-songs.txt || true
+
+          if [ "$code" != "200" ]; then
+            echo "Auth health thất bại (kỳ vọng 200)"
+            exit 1
+          fi
+
+          echo "Ping OK lúc $(date -u +%Y-%m-%dT%H:%M:%SZ) UTC"

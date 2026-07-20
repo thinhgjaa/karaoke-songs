@@ -67,24 +67,26 @@ export default function SongFormModal({
   }
 
   const inputClass =
-    'w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20'
+    'w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-white/10 dark:bg-slate-900/60'
 
   return (
     <div
-      className="fixed inset-0 z-50 flex overflow-y-auto bg-slate-900/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex overflow-y-auto bg-slate-900/40 p-4 backdrop-blur-sm dark:bg-black/60"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
     >
       <form
         onSubmit={handleSubmit}
-        className="animate-pop-in m-auto w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl"
+        className="animate-pop-in m-auto w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-slate-900"
       >
-        <h2 className="mb-5 text-lg font-bold text-slate-900">{song ? 'Sửa bài hát' : 'Thêm bài hát mới'}</h2>
+        <h2 className="mb-5 text-lg font-bold text-slate-900 dark:text-white">
+          {song ? 'Sửa bài hát' : 'Thêm bài hát mới'}
+        </h2>
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">
+            <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
               Tên bài hát <span className="text-rose-500">*</span>
             </label>
             <input
@@ -125,7 +127,7 @@ export default function SongFormModal({
           />
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">Link YouTube / beat karaoke</label>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Link YouTube / beat karaoke</label>
             <input
               value={youtubeUrl}
               onChange={(e) => setYoutubeUrl(e.target.value)}
@@ -136,7 +138,7 @@ export default function SongFormModal({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">Lời bài hát</label>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Lời bài hát</label>
             <textarea
               value={lyrics}
               onChange={(e) => setLyrics(e.target.value)}
@@ -147,7 +149,7 @@ export default function SongFormModal({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">
+            <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
               Ghi chú riêng (tông giọng, đoạn hay…)
             </label>
             <textarea
@@ -159,26 +161,28 @@ export default function SongFormModal({
             />
           </div>
 
-          <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 shadow-sm transition hover:border-cyan-400">
+          <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 shadow-sm transition hover:border-cyan-400 dark:border-white/10 dark:bg-slate-900/60 dark:hover:border-cyan-500/40">
             <input
               type="checkbox"
               checked={isDuet}
               onChange={(e) => setIsDuet(e.target.checked)}
               className="h-4 w-4 shrink-0 accent-cyan-600"
             />
-            <span className="text-sm font-medium text-slate-700">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Bài này hát cặp (song ca) được 👥
             </span>
           </label>
 
           <div>
-            <span className="mb-1.5 block text-sm font-medium text-slate-700">Mức độ yêu thích</span>
+            <span className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Mức độ yêu thích
+            </span>
             <StarRating value={rating} onChange={setRating} size="md" />
           </div>
         </div>
 
         {error && (
-          <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+          <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
             {error}
           </div>
         )}
@@ -187,7 +191,7 @@ export default function SongFormModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 transition hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 transition hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
           >
             Hủy
           </button>

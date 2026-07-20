@@ -29,13 +29,17 @@ export async function fetchSongs(): Promise<Song[]> {
 }
 
 export async function fetchTags(table: TagTable): Promise<Tag[]> {
-  const { data, error } = await supabase.from(table).select('id, name').order('name')
+  const { data, error } = await supabase.from(table).select('id, name, created_at')
   if (error) throw error
   return data ?? []
 }
 
 export async function createTag(table: TagTable, name: string): Promise<Tag> {
-  const { data, error } = await supabase.from(table).insert({ name: name.trim() }).select('id, name').single()
+  const { data, error } = await supabase
+    .from(table)
+    .insert({ name: name.trim() })
+    .select('id, name, created_at')
+    .single()
   if (error) throw error
   return data
 }

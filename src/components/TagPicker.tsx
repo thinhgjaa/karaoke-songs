@@ -13,18 +13,21 @@ interface TagPickerProps {
 
 const accentClasses = {
   violet: {
-    active: 'border-brand-500 bg-brand-50 text-brand-700',
+    active: 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-500/20 dark:text-brand-200',
     ring: 'focus:border-brand-500 focus:ring-brand-500/20',
   },
   pink: {
-    active: 'border-pink-500 bg-pink-50 text-pink-700',
+    active: 'border-pink-500 bg-pink-50 text-pink-700 dark:bg-pink-500/20 dark:text-pink-200',
     ring: 'focus:border-pink-500 focus:ring-pink-500/20',
   },
   sky: {
-    active: 'border-sky-500 bg-sky-50 text-sky-700',
+    active: 'border-sky-500 bg-sky-50 text-sky-700 dark:bg-sky-500/20 dark:text-sky-200',
     ring: 'focus:border-sky-500 focus:ring-sky-500/20',
   },
 }
+
+const fieldClass =
+  'border-slate-200 bg-white dark:border-white/10 dark:bg-slate-900/60'
 
 export default function TagPicker({ label, tags, selectedIds, onToggle, onCreate, accent }: TagPickerProps) {
   const [newName, setNewName] = useState('')
@@ -51,21 +54,21 @@ export default function TagPicker({ label, tags, selectedIds, onToggle, onCreate
 
   return (
     <div>
-      <span className="mb-1.5 block text-sm font-medium text-slate-700">{label}</span>
+      <span className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">{label}</span>
       {tags.length > 6 && (
         <div className="relative mb-2">
           <input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Gõ để lọc nhanh (không cần dấu)…"
-            className={`w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 pr-8 text-xs shadow-sm outline-none transition focus:ring-2 ${classes.ring}`}
+            className={`w-full rounded-lg border px-3 py-1.5 pr-8 text-xs shadow-sm outline-none transition focus:ring-2 ${fieldClass} ${classes.ring}`}
           />
           {filter && (
             <button
               type="button"
               onClick={() => setFilter('')}
               aria-label="Xóa lọc"
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-slate-100"
             >
               <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                 <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -83,7 +86,9 @@ export default function TagPicker({ label, tags, selectedIds, onToggle, onCreate
               type="button"
               onClick={() => onToggle(tag.id)}
               className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-                active ? classes.active : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-800'
+                active
+                  ? classes.active
+                  : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
               {tag.name}
@@ -106,13 +111,13 @@ export default function TagPicker({ label, tags, selectedIds, onToggle, onCreate
             }
           }}
           placeholder="Thêm mới nhanh…"
-          className={`w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs shadow-sm outline-none transition focus:ring-2 ${classes.ring}`}
+          className={`w-full rounded-lg border px-3 py-1.5 text-xs shadow-sm outline-none transition focus:ring-2 ${fieldClass} ${classes.ring}`}
         />
         <button
           type="button"
           onClick={() => void handleCreate()}
           disabled={creating || !newName.trim()}
-          className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+          className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-40 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
         >
           + Thêm
         </button>

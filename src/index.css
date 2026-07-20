@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
 
@@ -20,9 +22,21 @@ html {
   color-scheme: light;
 }
 
+html.dark {
+  color-scheme: dark;
+}
+
 body {
   @apply bg-[#fafbfc] text-slate-800 font-sans antialiased;
   min-height: 100dvh;
+}
+
+html.dark body {
+  @apply bg-slate-950 text-slate-100;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(123, 104, 238, 0.18), transparent),
+    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(248, 87, 166, 0.08), transparent);
+  background-attachment: fixed;
 }
 
 @keyframes fade-up {
@@ -75,6 +89,16 @@ body {
   animation: shimmer 1.6s linear infinite;
 }
 
+html.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    rgb(255 255 255 / 0.04) 25%,
+    rgb(255 255 255 / 0.1) 50%,
+    rgb(255 255 255 / 0.04) 75%
+  );
+  background-size: 200% 100%;
+}
+
 /* Gradient thương hiệu kiểu logo ClickUp: tím → hồng */
 .text-gradient {
   background: linear-gradient(90deg, #7b68ee, #f857a6);
@@ -93,4 +117,8 @@ body {
 ::-webkit-scrollbar-thumb {
   background: rgb(148 163 184 / 0.5);
   border-radius: 8px;
+}
+html.dark::-webkit-scrollbar-thumb,
+html.dark *::-webkit-scrollbar-thumb {
+  background: rgb(71 85 105 / 0.5);
 }

@@ -1,16 +1,19 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
     isActive
-      ? 'bg-brand-50 text-brand-700'
-      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+      ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300'
+      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white'
   }`
 
 const mobileNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-lg px-3 py-1.5 text-sm font-medium transition ${
-    isActive ? 'bg-brand-50 text-brand-700' : 'text-slate-600 hover:text-slate-900'
+    isActive
+      ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300'
+      : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
   }`
 
 function Logo() {
@@ -21,16 +24,53 @@ function Logo() {
   )
 }
 
+function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme()
+  const isDark = theme === 'dark'
+
+  return (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      aria-label={isDark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
+      title={isDark ? 'Light mode' : 'Dark mode'}
+      className="flex items-center justify-center rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
+    >
+      {isDark ? (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="2" />
+          <path
+            d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+        </svg>
+      ) : (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="M21 14.3A9 9 0 1 1 9.7 3a7 7 0 0 0 11.3 11.3z"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )}
+    </button>
+  )
+}
+
 export default function Layout() {
   const { signOut } = useAuth()
 
   return (
     <div className="flex min-h-dvh">
       {/* Sidebar kiểu ClickUp — chỉ hiện từ md trở lên */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-slate-200 bg-white md:flex">
-        <div className="flex items-center gap-2.5 border-b border-slate-100 px-4 py-4">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-slate-200 bg-white dark:border-white/10 dark:bg-slate-900 md:flex">
+        <div className="flex items-center gap-2.5 border-b border-slate-100 px-4 py-4 dark:border-white/5">
           <Logo />
-          <span className="text-sm font-bold text-slate-900">
+          <span className="text-sm font-bold text-slate-900 dark:text-white">
             Kho bài hát <span className="text-gradient">Karaoke</span>
           </span>
         </div>
@@ -39,15 +79,25 @@ export default function Layout() {
           <NavLink to="/" end className={navLinkClass}>
             <span aria-hidden="true">🎵</span> Bài hát
           </NavLink>
+          <NavLink to="/ca-si" className={navLinkClass}>
+            <span aria-hidden="true">🎤</span> Ca sĩ
+          </NavLink>
           <NavLink to="/the-loai" className={navLinkClass}>
-            <span aria-hidden="true">🏷️</span> Ca sĩ, Thể loại &amp; Tâm trạng
+            <span aria-hidden="true">🎸</span> Thể loại
+          </NavLink>
+          <NavLink to="/tam-trang" className={navLinkClass}>
+            <span aria-hidden="true">💫</span> Tâm trạng
           </NavLink>
         </nav>
 
-        <div className="border-t border-slate-100 p-3">
+        <div className="space-y-1 border-t border-slate-100 p-3 dark:border-white/5">
+          <div className="flex items-center justify-between gap-2 px-1 py-1">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Giao diện</span>
+            <ThemeToggle />
+          </div>
           <button
             onClick={() => void signOut()}
-            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-rose-50 hover:text-rose-600"
+            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-rose-50 hover:text-rose-600 dark:text-slate-400 dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
           >
             <span aria-hidden="true">↩</span> Đăng xuất
           </button>
@@ -57,24 +107,33 @@ export default function Layout() {
       {/* Nội dung chính */}
       <div className="flex min-w-0 flex-1 flex-col md:pl-60">
         {/* Header mobile */}
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur md:hidden">
-          <div className="flex items-center gap-2">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur dark:border-white/10 dark:bg-slate-950/90 md:hidden">
+          <div className="flex min-w-0 items-center gap-2">
             <Logo />
-            <nav className="flex items-center gap-1">
+            <nav className="flex items-center gap-1 overflow-x-auto">
               <NavLink to="/" end className={mobileNavLinkClass}>
                 Bài hát
+              </NavLink>
+              <NavLink to="/ca-si" className={mobileNavLinkClass}>
+                Ca sĩ
               </NavLink>
               <NavLink to="/the-loai" className={mobileNavLinkClass}>
                 Thể loại
               </NavLink>
+              <NavLink to="/tam-trang" className={mobileNavLinkClass}>
+                Tâm trạng
+              </NavLink>
             </nav>
           </div>
-          <button
-            onClick={() => void signOut()}
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition hover:border-rose-300 hover:text-rose-600"
-          >
-            Đăng xuất
-          </button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <button
+              onClick={() => void signOut()}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition hover:border-rose-300 hover:text-rose-600 dark:border-white/10 dark:text-slate-300 dark:hover:border-rose-500/40 dark:hover:text-rose-300"
+            >
+              Đăng xuất
+            </button>
+          </div>
         </header>
 
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 md:px-8">

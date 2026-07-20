@@ -4,6 +4,7 @@ import { matchesSearch } from '../lib/text'
 import type { Song, SongInput, Tag } from '../lib/types'
 import SongCard from '../components/SongCard'
 import SongFormModal from '../components/SongFormModal'
+import { useMidnightPing } from '../hooks/useMidnightPing'
 
 type ModalState = { open: false } | { open: true; song: Song | null }
 
@@ -46,6 +47,11 @@ export default function SongsPage() {
   useEffect(() => {
     void reload()
   }, [reload])
+
+  // Mỗi 0:00 (giờ máy) tự tải lại data nếu tab vẫn mở
+  useMidnightPing(() => {
+    void reload()
+  })
 
   const filtered = useMemo(
     () =>
@@ -98,16 +104,16 @@ export default function SongsPage() {
   }
 
   const selectClass =
-    'rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition hover:border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20'
+    'rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition hover:border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-white/20'
 
   return (
     <div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white">
             Bài hát <span className="text-gradient">của tôi</span>
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             {songs.length} bài{filtered.length !== songs.length ? ` · đang hiện ${filtered.length}` : ''}
           </p>
         </div>
@@ -125,14 +131,14 @@ export default function SongsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Tìm tên bài hát, ca sĩ (không cần dấu)…"
-            className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2 pr-9 text-sm shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+            className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2 pr-9 text-sm shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-white/10 dark:bg-slate-900/60"
           />
           {search && (
             <button
               type="button"
               onClick={() => setSearch('')}
               aria-label="Xóa tìm kiếm"
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-slate-100"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                 <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -186,7 +192,7 @@ export default function SongsPage() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+        <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
           {error}
         </div>
       )}
@@ -194,7 +200,10 @@ export default function SongsPage() {
       {loading ? (
         <div className="grid gap-3 sm:grid-cols-2">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+            <div
+              key={i}
+              className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/5"
+            >
               <div className="skeleton h-36 w-full" />
               <div className="space-y-2.5 p-4">
                 <div className="skeleton h-4 w-2/3 rounded-md" />
@@ -208,11 +217,11 @@ export default function SongsPage() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="animate-fade-up rounded-xl border border-dashed border-slate-300 bg-white py-20 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-50 text-3xl">
+        <div className="animate-fade-up rounded-xl border border-dashed border-slate-300 bg-white py-20 text-center dark:border-white/10 dark:bg-white/[0.02]">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-50 text-3xl dark:bg-brand-500/15">
             🎵
           </div>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             {songs.length === 0 ? 'Chưa có bài hát nào. Bấm "Thêm bài hát" để bắt đầu!' : 'Không tìm thấy bài nào khớp bộ lọc.'}
           </p>
         </div>

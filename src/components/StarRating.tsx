@@ -17,7 +17,7 @@ export default function StarRating({ value, onChange, size = 'sm' }: StarRatingP
           disabled={!interactive}
           onClick={() => onChange?.(star === value ? 0 : star)}
           className={`${interactive ? 'cursor-pointer transition hover:scale-125' : 'cursor-default'} ${
-            star <= value ? 'text-amber-400' : 'text-slate-300'
+            star <= value ? 'text-amber-400' : 'text-slate-300 dark:text-slate-700'
           }`}
           aria-label={`${star} sao`}
         >
