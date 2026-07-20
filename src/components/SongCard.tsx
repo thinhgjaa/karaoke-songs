@@ -14,18 +14,26 @@ interface SongCardProps {
 function SongCard({ song, index, onEdit, onDelete }: SongCardProps) {
   const [expanded, setExpanded] = useState(false)
   const [thumbBroken, setThumbBroken] = useState(false)
-  const [details, setDetails] = useState<{ lyrics: string; notes: string } | null>(
-    song.lyrics !== undefined || song.notes !== undefined
-      ? { lyrics: song.lyrics ?? '', notes: song.notes ?? '' }
-      : null,
-  )
+  const [details, setDetails] = useState<{ lyrics: string; notes: string } | null>(null)
   const [detailsLoading, setDetailsLoading] = useState(false)
   const [detailsError, setDetailsError] = useState<string | null>(null)
   const thumbnail = thumbBroken ? null : getYoutubeThumbnail(song.youtube_url)
   const artistNames = song.artists.map((a) => a.name).join(', ')
 
   useEffect(() => {
-    if (!expanded || details || detailsLoading) return
+    setDetails(null)
+    setDetailsError(null)
+    setDetailsLoading(false)
+  }, [song.id])
+
+  useEffect(() => {
+    if (song.lyrics !== undefined || song.notes !== undefined) {
+      setDetails({ lyrics: song.lyrics ?? '', notes: song.notes ?? '' })
+    }
+  }, [song.id, song.lyrics, song.notes])
+
+  useEffect(() => {
+    if (!expanded || details !== null) return
 
     let cancelled = false
     setDetailsLoading(true)
@@ -46,8 +54,9 @@ function SongCard({ song, index, onEdit, onDelete }: SongCardProps) {
 
     return () => {
       cancelled = true
+      setDetailsLoading(false)
     }
-  }, [expanded, details, detailsLoading, song.id])
+  }, [expanded, details, song.id])
 
   function toggleExpanded() {
     setExpanded((prev) => !prev)
@@ -143,6 +152,9 @@ function SongCard({ song, index, onEdit, onDelete }: SongCardProps) {
                 ) : null}
                 {!hasContent && <p className="text-sm text-slate-400">Chưa có lời bài hát hay ghi chú.</p>}
               </>
+            )}
+            {!detailsLoading && !detailsError && !details && (
+              <p className="text-sm text-slate-400">Không tải được chi tiết. Thử bấm Thu gọn rồi mở lại.</p>
             )}
           </div>
         )}

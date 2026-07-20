@@ -18,6 +18,8 @@ export function songFromInput(
     created_at,
     title: input.title.trim(),
     youtube_url: input.youtube_url.trim(),
+    lyrics: input.lyrics,
+    notes: input.notes,
     rating: input.rating,
     is_duet: input.is_duet,
     artists: pickTags(artists, input.artistIds),

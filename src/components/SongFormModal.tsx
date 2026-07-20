@@ -64,6 +64,7 @@ export default function SongFormModal({
 
     return () => {
       cancelled = true
+      setDetailsLoading(false)
     }
   }, [song?.id, song?.lyrics, song?.notes])
 
