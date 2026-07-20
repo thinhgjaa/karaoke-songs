@@ -67,6 +67,22 @@ export default function SongFormModal({
     }
   }, [song?.id, song?.lyrics, song?.notes])
 
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape' && !saving) onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onClose, saving])
+
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [])
+
   function toggle(list: string[], setList: (v: string[]) => void, id: string) {
     setList(list.includes(id) ? list.filter((x) => x !== id) : [...list, id])
   }
@@ -107,9 +123,12 @@ export default function SongFormModal({
     >
       <form
         onSubmit={handleSubmit}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="song-modal-title"
         className="animate-pop-in m-auto w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-slate-900"
       >
-        <h2 className="mb-5 text-lg font-bold text-slate-900 dark:text-white">
+        <h2 id="song-modal-title" className="mb-5 text-lg font-bold text-slate-900 dark:text-white">
           {song ? 'Sửa bài hát' : 'Thêm bài hát mới'}
         </h2>
 

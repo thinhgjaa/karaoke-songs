@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import type { Song } from '../lib/types'
 import { fetchSongDetails } from '../lib/api'
 import { getYoutubeThumbnail } from '../lib/youtube'
@@ -11,7 +11,7 @@ interface SongCardProps {
   onDelete: () => void
 }
 
-export default function SongCard({ song, index, onEdit, onDelete }: SongCardProps) {
+function SongCard({ song, index, onEdit, onDelete }: SongCardProps) {
   const [expanded, setExpanded] = useState(false)
   const [thumbBroken, setThumbBroken] = useState(false)
   const [details, setDetails] = useState<{ lyrics: string; notes: string } | null>(
@@ -72,6 +72,7 @@ export default function SongCard({ song, index, onEdit, onDelete }: SongCardProp
             src={thumbnail}
             alt={song.title}
             loading="lazy"
+            decoding="async"
             onError={() => setThumbBroken(true)}
             className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
           />
@@ -182,3 +183,5 @@ export default function SongCard({ song, index, onEdit, onDelete }: SongCardProp
     </div>
   )
 }
+
+export default memo(SongCard)

@@ -102,10 +102,11 @@ function songFields(input: SongInput) {
   }
 }
 
-export async function createSong(input: SongInput): Promise<void> {
-  const { data, error } = await supabase.from('songs').insert(songFields(input)).select('id').single()
+export async function createSong(input: SongInput): Promise<{ id: string; created_at: string }> {
+  const { data, error } = await supabase.from('songs').insert(songFields(input)).select('id, created_at').single()
   if (error) throw error
   await setSongTags(data.id, input)
+  return data
 }
 
 export async function updateSong(id: string, input: SongInput): Promise<void> {

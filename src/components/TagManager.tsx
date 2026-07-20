@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { createTag, deleteTag, fetchTags, renameTag, type TagTable } from '../lib/api'
-import type { Tag } from '../lib/types'
+import { useMemo, useState, type FormEvent } from 'react'
+import type { TagTable } from '../lib/api'
 import { matchesSearch } from '../lib/text'
-import { useMidnightPing } from '../hooks/useMidnightPing'
+import type { Tag } from '../lib/types'
+import { useConfirm } from '../context/ConfirmContext'
+import { useTags } from '../context/TagsContext'
+import { useToast } from '../context/ToastContext'
 
 export interface TagManagerProps {
   table: TagTable
@@ -19,8 +21,10 @@ const selectClass =
   'rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition hover:border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-white/20'
 
 export default function TagManager({ table, pageTitle, gradientWord, hint, accent }: TagManagerProps) {
-  const [tags, setTags] = useState<Tag[]>([])
-  const [loading, setLoading] = useState(true)
+  const { tagsFor, loading, createTagAndCache, renameTagAndCache, deleteTagAndCache } = useTags()
+  const toast = useToast()
+  const { confirm } = useConfirm()
+  const tags = tagsFor(table)
   const [newName, setNewName] = useState('')
   const [search, setSearch] = useState('')
   const [sortField, setSortField] = useState<SortField>('name')
@@ -36,25 +40,6 @@ export default function TagManager({ table, pageTitle, gradientWord, hint, accen
     sky: 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200',
   }[accent]
 
-  const reload = useCallback(async () => {
-    try {
-      setTags(await fetchTags(table))
-      setError(null)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Không tải được dữ liệu.')
-    } finally {
-      setLoading(false)
-    }
-  }, [table])
-
-  useEffect(() => {
-    void reload()
-  }, [reload])
-
-  useMidnightPing(() => {
-    void reload()
-  })
-
   const displayed = useMemo(() => {
     const filtered = tags.filter((tag) => matchesSearch(tag.name, search))
     const sorted = [...filtered].sort((a, b) => {
@@ -62,22 +47,25 @@ export default function TagManager({ table, pageTitle, gradientWord, hint, accen
       if (sortField === 'name') {
         cmp = a.name.localeCompare(b.name, 'vi')
       } else {
-        cmp =
-          new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime()
+        cmp = new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime()
       }
       return sortDir === 'asc' ? cmp : -cmp
     })
     return sorted
   }, [tags, search, sortField, sortDir])
 
-  async function run(action: () => Promise<unknown>) {
+  async function run(action: () => Promise<unknown>, successMessage?: string) {
     try {
       await action()
-      await reload()
       setError(null)
+      if (successMessage) toast.success(successMessage)
+      return true
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Có lỗi xảy ra.'
-      setError(message.includes('duplicate key') ? 'Tên này đã tồn tại rồi.' : message)
+      const friendly = message.includes('duplicate key') ? 'Tên này đã tồn tại rồi.' : message
+      setError(friendly)
+      toast.error(friendly)
+      return false
     }
   }
 
@@ -85,8 +73,19 @@ export default function TagManager({ table, pageTitle, gradientWord, hint, accen
     e.preventDefault()
     const name = newName.trim()
     if (!name) return
-    await run(() => createTag(table, name))
-    setNewName('')
+    const ok = await run(() => createTagAndCache(table, name), `Đã thêm "${name}"`)
+    if (ok) setNewName('')
+  }
+
+  async function handleDeleteTag(tag: Tag) {
+    const ok = await confirm({
+      title: `Xóa ${gradientWord.toLowerCase()}`,
+      message: `Xóa "${tag.name}"? Các bài hát sẽ tự bỏ nhãn này.`,
+      confirmLabel: 'Xóa',
+      danger: true,
+    })
+    if (!ok) return
+    await run(() => deleteTagAndCache(table, tag.id), `Đã xóa "${tag.name}"`)
   }
 
   return (
@@ -194,9 +193,13 @@ export default function TagManager({ table, pageTitle, gradientWord, hint, accen
                       className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm shadow-sm outline-none focus:border-brand-500 dark:border-white/10 dark:bg-slate-900/60"
                     />
                     <button
-                      onClick={() =>
-                        void run(() => renameTag(table, tag.id, editName)).then(() => setEditingId(null))
-                      }
+                      onClick={() => {
+                        const trimmed = editName.trim()
+                        void run(
+                          () => renameTagAndCache(table, tag.id, trimmed).then(() => setEditingId(null)),
+                          `Đã đổi tên thành "${trimmed}"`,
+                        )
+                      }}
                       disabled={!editName.trim()}
                       className="shrink-0 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-700 disabled:opacity-40"
                     >
@@ -232,11 +235,7 @@ export default function TagManager({ table, pageTitle, gradientWord, hint, accen
                         Đổi tên
                       </button>
                       <button
-                        onClick={() => {
-                          if (window.confirm(`Xóa "${tag.name}"? Các bài hát sẽ tự bỏ nhãn này.`)) {
-                            void run(() => deleteTag(table, tag.id))
-                          }
-                        }}
+                        onClick={() => void handleDeleteTag(tag)}
                         className="rounded-lg px-2.5 py-1 text-xs text-slate-500 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
                       >
                         Xóa

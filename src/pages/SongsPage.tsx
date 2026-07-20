@@ -1,56 +1,80 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { createSong, createTag, deleteSong, fetchSongs, fetchTags, updateSong } from '../lib/api'
+import { useSearchParams } from 'react-router-dom'
+import { createSong, deleteSong, fetchSongs, updateSong } from '../lib/api'
+import { songFromInput, syncSongTags } from '../lib/songs'
 import { matchesSearch } from '../lib/text'
-import type { Song, SongInput, Tag } from '../lib/types'
+import type { Song, SongInput } from '../lib/types'
 import SongCard from '../components/SongCard'
 import SongFormModal from '../components/SongFormModal'
+import { useConfirm } from '../context/ConfirmContext'
+import { useTags } from '../context/TagsContext'
+import { useToast } from '../context/ToastContext'
 import { useMidnightPing } from '../hooks/useMidnightPing'
 
 type ModalState = { open: false } | { open: true; song: Song | null }
 
 export default function SongsPage() {
+  const { artists, genres, moods, loading: tagsLoading, createTagAndCache } = useTags()
+  const toast = useToast()
+  const { confirm } = useConfirm()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [songs, setSongs] = useState<Song[]>([])
-  const [artists, setArtists] = useState<Tag[]>([])
-  const [genres, setGenres] = useState<Tag[]>([])
-  const [moods, setMoods] = useState<Tag[]>([])
-  const [loading, setLoading] = useState(true)
+  const [songsLoading, setSongsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  const [search, setSearch] = useState('')
-  const [artistFilter, setArtistFilter] = useState('')
-  const [genreFilter, setGenreFilter] = useState('')
-  const [moodFilter, setMoodFilter] = useState('')
-  const [duetFilter, setDuetFilter] = useState('')
-  const [minRating, setMinRating] = useState(0)
   const [modal, setModal] = useState<ModalState>({ open: false })
 
-  const reload = useCallback(async () => {
+  const search = searchParams.get('q') ?? ''
+  const artistFilter = searchParams.get('artist') ?? ''
+  const genreFilter = searchParams.get('genre') ?? ''
+  const moodFilter = searchParams.get('mood') ?? ''
+  const duetFilter = searchParams.get('duet') ?? ''
+  const minRating = Number(searchParams.get('rating') ?? '0') || 0
+
+  const loading = songsLoading || tagsLoading
+
+  function setFilter(key: string, value: string | number) {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        const str = String(value)
+        if (!str || str === '0') next.delete(key)
+        else next.set(key, str)
+        return next
+      },
+      { replace: true },
+    )
+  }
+
+  const hasActiveFilters = Boolean(
+    search || artistFilter || genreFilter || moodFilter || duetFilter || minRating > 0,
+  )
+
+  function clearFilters() {
+    setSearchParams({}, { replace: true })
+  }
+
+  const reloadSongs = useCallback(async () => {
     try {
-      const [songData, artistData, genreData, moodData] = await Promise.all([
-        fetchSongs(),
-        fetchTags('artists'),
-        fetchTags('genres'),
-        fetchTags('moods'),
-      ])
-      setSongs(songData)
-      setArtists(artistData)
-      setGenres(genreData)
-      setMoods(moodData)
+      setSongs(await fetchSongs())
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không tải được dữ liệu.')
     } finally {
-      setLoading(false)
+      setSongsLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    void reload()
-  }, [reload])
+    void reloadSongs()
+  }, [reloadSongs])
 
-  // Mỗi 0:00 (giờ máy) tự tải lại data nếu tab vẫn mở
+  // Đồng bộ tag trên card: cập nhật tên mới, gỡ tag đã xóa
+  useEffect(() => {
+    setSongs((prev) => prev.map((song) => syncSongTags(song, artists, genres, moods)))
+  }, [artists, genres, moods])
+
   useMidnightPing(() => {
-    void reload()
+    void reloadSongs()
   })
 
   const filtered = useMemo(
@@ -72,38 +96,36 @@ export default function SongsPage() {
   async function handleSave(input: SongInput) {
     if (modal.open && modal.song) {
       await updateSong(modal.song.id, input)
+      setSongs((prev) =>
+        prev.map((s) =>
+          s.id === modal.song!.id
+            ? songFromInput(s.id, s.created_at, input, artists, genres, moods)
+            : s,
+        ),
+      )
+      toast.success(`Đã cập nhật "${input.title.trim()}"`)
     } else {
-      await createSong(input)
+      const { id, created_at } = await createSong(input)
+      setSongs((prev) => [songFromInput(id, created_at, input, artists, genres, moods), ...prev])
+      toast.success(`Đã thêm "${input.title.trim()}"`)
     }
-    await reload()
   }
 
   async function handleDelete(song: Song) {
-    if (!window.confirm(`Xóa bài "${song.title}"? Hành động này không hoàn tác được.`)) return
+    const ok = await confirm({
+      title: 'Xóa bài hát',
+      message: `Xóa "${song.title}"? Hành động này không hoàn tác được.`,
+      confirmLabel: 'Xóa',
+      danger: true,
+    })
+    if (!ok) return
     try {
       await deleteSong(song.id)
-      await reload()
+      setSongs((prev) => prev.filter((s) => s.id !== song.id))
+      toast.success(`Đã xóa "${song.title}"`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Không xóa được bài hát.')
+      toast.error(err instanceof Error ? err.message : 'Không xóa được bài hát.')
     }
-  }
-
-  async function handleCreateArtist(name: string) {
-    const tag = await createTag('artists', name)
-    setArtists(await fetchTags('artists'))
-    return tag
-  }
-
-  async function handleCreateGenre(name: string) {
-    const tag = await createTag('genres', name)
-    setGenres(await fetchTags('genres'))
-    return tag
-  }
-
-  async function handleCreateMood(name: string) {
-    const tag = await createTag('moods', name)
-    setMoods(await fetchTags('moods'))
-    return tag
   }
 
   const selectClass =
@@ -132,14 +154,14 @@ export default function SongsPage() {
         <div className="relative w-full sm:flex-1">
           <input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => setFilter('q', e.target.value)}
             placeholder="Tìm tên bài hát, ca sĩ (không cần dấu)…"
             className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2 pr-9 text-sm shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-white/10 dark:bg-slate-900/60"
           />
           {search && (
             <button
               type="button"
-              onClick={() => setSearch('')}
+              onClick={() => setFilter('q', '')}
               aria-label="Xóa tìm kiếm"
               className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-slate-100"
             >
@@ -150,7 +172,11 @@ export default function SongsPage() {
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          <select value={artistFilter} onChange={(e) => setArtistFilter(e.target.value)} className={selectClass}>
+          <select
+            value={artistFilter}
+            onChange={(e) => setFilter('artist', e.target.value)}
+            className={selectClass}
+          >
             <option value="">Mọi ca sĩ</option>
             {artists.map((a) => (
               <option key={a.id} value={a.id}>
@@ -158,7 +184,11 @@ export default function SongsPage() {
               </option>
             ))}
           </select>
-          <select value={genreFilter} onChange={(e) => setGenreFilter(e.target.value)} className={selectClass}>
+          <select
+            value={genreFilter}
+            onChange={(e) => setFilter('genre', e.target.value)}
+            className={selectClass}
+          >
             <option value="">Mọi thể loại</option>
             {genres.map((g) => (
               <option key={g.id} value={g.id}>
@@ -166,7 +196,11 @@ export default function SongsPage() {
               </option>
             ))}
           </select>
-          <select value={moodFilter} onChange={(e) => setMoodFilter(e.target.value)} className={selectClass}>
+          <select
+            value={moodFilter}
+            onChange={(e) => setFilter('mood', e.target.value)}
+            className={selectClass}
+          >
             <option value="">Mọi tâm trạng</option>
             {moods.map((m) => (
               <option key={m.id} value={m.id}>
@@ -174,14 +208,18 @@ export default function SongsPage() {
               </option>
             ))}
           </select>
-          <select value={duetFilter} onChange={(e) => setDuetFilter(e.target.value)} className={selectClass}>
+          <select
+            value={duetFilter}
+            onChange={(e) => setFilter('duet', e.target.value)}
+            className={selectClass}
+          >
             <option value="">Đơn ca &amp; song ca</option>
             <option value="duet">👥 Hát cặp được</option>
             <option value="solo">Chỉ hát đơn</option>
           </select>
           <select
             value={minRating}
-            onChange={(e) => setMinRating(Number(e.target.value))}
+            onChange={(e) => setFilter('rating', e.target.value)}
             className={selectClass}
           >
             <option value={0}>Mọi đánh giá</option>
@@ -191,6 +229,15 @@ export default function SongsPage() {
               </option>
             ))}
           </select>
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
+            >
+              Xóa lọc
+            </button>
+          )}
         </div>
       </div>
 
@@ -225,7 +272,9 @@ export default function SongsPage() {
             🎵
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            {songs.length === 0 ? 'Chưa có bài hát nào. Bấm "Thêm bài hát" để bắt đầu!' : 'Không tìm thấy bài nào khớp bộ lọc.'}
+            {songs.length === 0
+              ? 'Chưa có bài hát nào. Bấm "Thêm bài hát" để bắt đầu!'
+              : 'Không tìm thấy bài nào khớp bộ lọc.'}
           </p>
         </div>
       ) : (
@@ -248,9 +297,9 @@ export default function SongsPage() {
           artists={artists}
           genres={genres}
           moods={moods}
-          onCreateArtist={handleCreateArtist}
-          onCreateGenre={handleCreateGenre}
-          onCreateMood={handleCreateMood}
+          onCreateArtist={(name) => createTagAndCache('artists', name)}
+          onCreateGenre={(name) => createTagAndCache('genres', name)}
+          onCreateMood={(name) => createTagAndCache('moods', name)}
           onSave={handleSave}
           onClose={() => setModal({ open: false })}
         />
