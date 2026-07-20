@@ -89,18 +89,21 @@ export default function SongsPage() {
   }
 
   async function handleCreateArtist(name: string) {
-    await createTag('artists', name)
+    const tag = await createTag('artists', name)
     setArtists(await fetchTags('artists'))
+    return tag
   }
 
   async function handleCreateGenre(name: string) {
-    await createTag('genres', name)
+    const tag = await createTag('genres', name)
     setGenres(await fetchTags('genres'))
+    return tag
   }
 
   async function handleCreateMood(name: string) {
-    await createTag('moods', name)
+    const tag = await createTag('moods', name)
     setMoods(await fetchTags('moods'))
+    return tag
   }
 
   const selectClass =

@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
+import { fetchSongDetails } from '../lib/api'
 import type { Song, SongInput, Tag } from '../lib/types'
 import StarRating from './StarRating'
 import TagPicker from './TagPicker'
@@ -8,9 +9,9 @@ interface SongFormModalProps {
   artists: Tag[]
   genres: Tag[]
   moods: Tag[]
-  onCreateArtist: (name: string) => Promise<void>
-  onCreateGenre: (name: string) => Promise<void>
-  onCreateMood: (name: string) => Promise<void>
+  onCreateArtist: (name: string) => Promise<Tag>
+  onCreateGenre: (name: string) => Promise<Tag>
+  onCreateMood: (name: string) => Promise<Tag>
   onSave: (input: SongInput) => Promise<void>
   onClose: () => void
 }
@@ -37,6 +38,34 @@ export default function SongFormModal({
   const [moodIds, setMoodIds] = useState<string[]>(song?.moods.map((m) => m.id) ?? [])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [detailsLoading, setDetailsLoading] = useState(false)
+
+  useEffect(() => {
+    if (!song?.id || (song.lyrics !== undefined && song.notes !== undefined)) return
+
+    let cancelled = false
+    setDetailsLoading(true)
+
+    void fetchSongDetails(song.id)
+      .then((data) => {
+        if (!cancelled) {
+          setLyrics(data.lyrics ?? '')
+          setNotes(data.notes ?? '')
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Không tải được chi tiết bài hát.')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDetailsLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [song?.id, song?.lyrics, song?.notes])
 
   function toggle(list: string[], setList: (v: string[]) => void, id: string) {
     setList(list.includes(id) ? list.filter((x) => x !== id) : [...list, id])
@@ -143,7 +172,8 @@ export default function SongFormModal({
               value={lyrics}
               onChange={(e) => setLyrics(e.target.value)}
               rows={4}
-              placeholder="Dán lời bài hát vào đây…"
+              placeholder={detailsLoading ? 'Đang tải lời bài hát…' : 'Dán lời bài hát vào đây…'}
+              disabled={detailsLoading}
               className={inputClass}
             />
           </div>
@@ -156,7 +186,8 @@ export default function SongFormModal({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              placeholder="Ví dụ: hạ tông -2, vào chậm ở điệp khúc…"
+              placeholder={detailsLoading ? 'Đang tải ghi chú…' : 'Ví dụ: hạ tông -2, vào chậm ở điệp khúc…'}
+              disabled={detailsLoading}
               className={inputClass}
             />
           </div>
@@ -197,7 +228,7 @@ export default function SongFormModal({
           </button>
           <button
             type="submit"
-            disabled={saving || !title.trim()}
+            disabled={saving || !title.trim() || detailsLoading}
             className="rounded-lg bg-brand-500 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:bg-brand-600 disabled:opacity-50"
           >
             {saving ? 'Đang lưu…' : 'Lưu bài hát'}

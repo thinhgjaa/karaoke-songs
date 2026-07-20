@@ -8,8 +8,8 @@ export interface Song {
   id: string
   title: string
   youtube_url: string
-  lyrics: string
-  notes: string
+  lyrics?: string
+  notes?: string
   rating: number
   is_duet: boolean
   created_at: string

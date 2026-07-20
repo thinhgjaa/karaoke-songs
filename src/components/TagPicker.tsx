@@ -7,7 +7,7 @@ interface TagPickerProps {
   tags: Tag[]
   selectedIds: string[]
   onToggle: (id: string) => void
-  onCreate: (name: string) => Promise<void>
+  onCreate: (name: string) => Promise<Tag>
   accent: 'violet' | 'pink' | 'sky'
 }
 
@@ -45,8 +45,9 @@ export default function TagPicker({ label, tags, selectedIds, onToggle, onCreate
     if (!name) return
     setCreating(true)
     try {
-      await onCreate(name)
+      const tag = await onCreate(name)
       setNewName('')
+      if (!selectedIds.includes(tag.id)) onToggle(tag.id)
     } finally {
       setCreating(false)
     }

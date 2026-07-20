@@ -20,6 +20,7 @@ const selectClass =
 
 export default function TagManager({ table, pageTitle, gradientWord, hint, accent }: TagManagerProps) {
   const [tags, setTags] = useState<Tag[]>([])
+  const [loading, setLoading] = useState(true)
   const [newName, setNewName] = useState('')
   const [search, setSearch] = useState('')
   const [sortField, setSortField] = useState<SortField>('name')
@@ -41,6 +42,8 @@ export default function TagManager({ table, pageTitle, gradientWord, hint, accen
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không tải được dữ liệu.')
+    } finally {
+      setLoading(false)
     }
   }, [table])
 
@@ -162,7 +165,19 @@ export default function TagManager({ table, pageTitle, gradientWord, hint, accen
           </div>
         )}
 
-        {tags.length === 0 ? (
+        {loading ? (
+          <ul className="space-y-2">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <li key={i} className="flex items-center gap-2">
+                <div className="skeleton h-8 w-32 rounded-full" />
+                <div className="ml-auto flex gap-1">
+                  <div className="skeleton h-7 w-14 rounded-lg" />
+                  <div className="skeleton h-7 w-10 rounded-lg" />
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : tags.length === 0 ? (
           <p className="text-sm text-slate-400">Chưa có mục nào.</p>
         ) : displayed.length === 0 ? (
           <p className="text-sm text-slate-400">Không tìm thấy mục nào khớp từ khóa.</p>

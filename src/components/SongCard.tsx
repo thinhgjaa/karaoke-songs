@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Song } from '../lib/types'
+import { fetchSongDetails } from '../lib/api'
 import { getYoutubeThumbnail } from '../lib/youtube'
 import StarRating from './StarRating'
 
@@ -13,9 +14,46 @@ interface SongCardProps {
 export default function SongCard({ song, index, onEdit, onDelete }: SongCardProps) {
   const [expanded, setExpanded] = useState(false)
   const [thumbBroken, setThumbBroken] = useState(false)
-  const hasDetails = Boolean(song.lyrics || song.notes)
+  const [details, setDetails] = useState<{ lyrics: string; notes: string } | null>(
+    song.lyrics !== undefined || song.notes !== undefined
+      ? { lyrics: song.lyrics ?? '', notes: song.notes ?? '' }
+      : null,
+  )
+  const [detailsLoading, setDetailsLoading] = useState(false)
+  const [detailsError, setDetailsError] = useState<string | null>(null)
   const thumbnail = thumbBroken ? null : getYoutubeThumbnail(song.youtube_url)
   const artistNames = song.artists.map((a) => a.name).join(', ')
+
+  useEffect(() => {
+    if (!expanded || details || detailsLoading) return
+
+    let cancelled = false
+    setDetailsLoading(true)
+    setDetailsError(null)
+
+    void fetchSongDetails(song.id)
+      .then((data) => {
+        if (!cancelled) setDetails(data)
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setDetailsError(err instanceof Error ? err.message : 'Không tải được chi tiết.')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDetailsLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [expanded, details, detailsLoading, song.id])
+
+  function toggleExpanded() {
+    setExpanded((prev) => !prev)
+  }
+
+  const hasContent = Boolean(details?.lyrics || details?.notes)
 
   return (
     <div
@@ -84,19 +122,26 @@ export default function SongCard({ song, index, onEdit, onDelete }: SongCardProp
 
         {expanded && (
           <div className="mt-3 space-y-3 border-t border-slate-100 pt-3 dark:border-white/5">
-            {song.notes && (
-              <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Ghi chú</p>
-                <p className="whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300">{song.notes}</p>
-              </div>
-            )}
-            {song.lyrics && (
-              <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Lời bài hát</p>
-                <p className="max-h-64 overflow-y-auto whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300">
-                  {song.lyrics}
-                </p>
-              </div>
+            {detailsLoading && <p className="text-sm text-slate-400">Đang tải chi tiết…</p>}
+            {detailsError && <p className="text-sm text-rose-500">{detailsError}</p>}
+            {!detailsLoading && !detailsError && details && (
+              <>
+                {details.notes ? (
+                  <div>
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Ghi chú</p>
+                    <p className="whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300">{details.notes}</p>
+                  </div>
+                ) : null}
+                {details.lyrics ? (
+                  <div>
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Lời bài hát</p>
+                    <p className="max-h-64 overflow-y-auto whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300">
+                      {details.lyrics}
+                    </p>
+                  </div>
+                ) : null}
+                {!hasContent && <p className="text-sm text-slate-400">Chưa có lời bài hát hay ghi chú.</p>}
+              </>
             )}
           </div>
         )}
@@ -112,14 +157,12 @@ export default function SongCard({ song, index, onEdit, onDelete }: SongCardProp
               ▶ YouTube
             </a>
           )}
-          {hasDetails && (
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="rounded-lg px-2.5 py-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-white"
-            >
-              {expanded ? 'Thu gọn' : 'Chi tiết'}
-            </button>
-          )}
+          <button
+            onClick={toggleExpanded}
+            className="rounded-lg px-2.5 py-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-white"
+          >
+            {expanded ? 'Thu gọn' : 'Chi tiết'}
+          </button>
           <div className="ml-auto flex gap-1">
             <button
               onClick={onEdit}

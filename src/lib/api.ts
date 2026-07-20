@@ -7,8 +7,8 @@ interface SongRow {
   id: string
   title: string
   youtube_url: string
-  lyrics: string
-  notes: string
+  lyrics?: string
+  notes?: string
   rating: number
   is_duet: boolean
   created_at: string
@@ -17,15 +17,22 @@ interface SongRow {
   moods: Tag[]
 }
 
+const songListSelect =
+  'id, title, youtube_url, rating, is_duet, created_at, artists(id, name), genres(id, name), moods(id, name)'
+
 export async function fetchSongs(): Promise<Song[]> {
   const { data, error } = await supabase
     .from('songs')
-    .select(
-      'id, title, youtube_url, lyrics, notes, rating, is_duet, created_at, artists(id, name), genres(id, name), moods(id, name)',
-    )
+    .select(songListSelect)
     .order('created_at', { ascending: false })
   if (error) throw error
   return (data as SongRow[]) ?? []
+}
+
+export async function fetchSongDetails(id: string): Promise<Pick<Song, 'lyrics' | 'notes'>> {
+  const { data, error } = await supabase.from('songs').select('lyrics, notes').eq('id', id).single()
+  if (error) throw error
+  return { lyrics: data.lyrics ?? '', notes: data.notes ?? '' }
 }
 
 export async function fetchTags(table: TagTable): Promise<Tag[]> {
