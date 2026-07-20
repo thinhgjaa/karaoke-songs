@@ -2,6 +2,7 @@ import { memo, useEffect, useState } from 'react'
 import type { Song } from '../lib/types'
 import { fetchSongDetails } from '../lib/api'
 import { getYoutubeThumbnail } from '../lib/youtube'
+import LyricsFullscreen from './LyricsFullscreen'
 import StarRating from './StarRating'
 
 interface SongCardProps {
@@ -17,6 +18,7 @@ function SongCard({ song, index, onEdit, onDelete }: SongCardProps) {
   const [details, setDetails] = useState<{ lyrics: string; notes: string } | null>(null)
   const [detailsLoading, setDetailsLoading] = useState(false)
   const [detailsError, setDetailsError] = useState<string | null>(null)
+  const [lyricsOpen, setLyricsOpen] = useState(false)
   const thumbnail = thumbBroken ? null : getYoutubeThumbnail(song.youtube_url)
   const artistNames = song.artists.map((a) => a.name).join(', ')
 
@@ -62,9 +64,24 @@ function SongCard({ song, index, onEdit, onDelete }: SongCardProps) {
     setExpanded((prev) => !prev)
   }
 
+  function openLyrics() {
+    if (!details && !detailsLoading) {
+      setExpanded(true)
+    }
+    setLyricsOpen(true)
+  }
+
   const hasContent = Boolean(details?.lyrics || details?.notes)
 
   return (
+    <>
+    {lyricsOpen && (
+      <LyricsFullscreen
+        song={song}
+        initialDetails={details ?? undefined}
+        onClose={() => setLyricsOpen(false)}
+      />
+    )}
     <div
       className="group animate-fade-up overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-500/10 dark:border-white/10 dark:bg-white/5 dark:hover:border-brand-400/40 dark:hover:bg-white/[0.07] dark:hover:shadow-violet-950/40"
       style={{ animationDelay: `${Math.min(index, 10) * 40}ms` }}
@@ -148,6 +165,13 @@ function SongCard({ song, index, onEdit, onDelete }: SongCardProps) {
                     <p className="max-h-64 overflow-y-auto whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300">
                       {details.lyrics}
                     </p>
+                    <button
+                      type="button"
+                      onClick={openLyrics}
+                      className="mt-2 text-xs font-medium text-brand-600 transition hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+                    >
+                      Mở full màn hình →
+                    </button>
                   </div>
                 ) : null}
                 {!hasContent && <p className="text-sm text-slate-400">Chưa có lời bài hát hay ghi chú.</p>}
@@ -176,6 +200,14 @@ function SongCard({ song, index, onEdit, onDelete }: SongCardProps) {
           >
             {expanded ? 'Thu gọn' : 'Chi tiết'}
           </button>
+          <button
+            type="button"
+            onClick={openLyrics}
+            className="rounded-lg px-2.5 py-1 text-slate-500 transition hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-500/10 dark:hover:text-brand-300"
+            title="Xem lời bài hát full màn hình"
+          >
+            Lời hát
+          </button>
           <div className="ml-auto flex gap-1">
             <button
               onClick={onEdit}
@@ -193,6 +225,7 @@ function SongCard({ song, index, onEdit, onDelete }: SongCardProps) {
         </div>
       </div>
     </div>
+    </>
   )
 }
 

@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { createSong, deleteSong, fetchSongs, updateSong } from '../lib/api'
-import { songFromInput, syncSongTags } from '../lib/songs'
+import { songFromInput, sortSongs, syncSongTags, type SongSort } from '../lib/songs'
 import { matchesSearch } from '../lib/text'
 import type { Song, SongInput } from '../lib/types'
+import LyricsFullscreen from '../components/LyricsFullscreen'
+import RandomSongModal from '../components/RandomSongModal'
 import SongCard from '../components/SongCard'
 import SongFormModal from '../components/SongFormModal'
 import { useConfirm } from '../context/ConfirmContext'
@@ -12,6 +14,15 @@ import { useToast } from '../context/ToastContext'
 import { useMidnightPing } from '../hooks/useMidnightPing'
 
 type ModalState = { open: false } | { open: true; song: Song | null }
+
+const SORT_OPTIONS: { value: SongSort; label: string }[] = [
+  { value: 'newest', label: 'Mới nhất' },
+  { value: 'oldest', label: 'Cũ nhất' },
+  { value: 'title-asc', label: 'Tên A → Z' },
+  { value: 'title-desc', label: 'Tên Z → A' },
+  { value: 'rating-desc', label: 'Sao cao → thấp' },
+  { value: 'rating-asc', label: 'Sao thấp → cao' },
+]
 
 export default function SongsPage() {
   const { artists, genres, moods, loading: tagsLoading, createTagAndCache } = useTags()
@@ -22,6 +33,8 @@ export default function SongsPage() {
   const [songsLoading, setSongsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [modal, setModal] = useState<ModalState>({ open: false })
+  const [randomSong, setRandomSong] = useState<Song | null>(null)
+  const [lyricsSong, setLyricsSong] = useState<Song | null>(null)
 
   const search = searchParams.get('q') ?? ''
   const artistFilter = searchParams.get('artist') ?? ''
@@ -29,6 +42,8 @@ export default function SongsPage() {
   const moodFilter = searchParams.get('mood') ?? ''
   const duetFilter = searchParams.get('duet') ?? ''
   const minRating = Number(searchParams.get('rating') ?? '0') || 0
+  const rawSort = searchParams.get('sort') ?? 'newest'
+  const sort: SongSort = SORT_OPTIONS.some((o) => o.value === rawSort) ? (rawSort as SongSort) : 'newest'
 
   const loading = songsLoading || tagsLoading
 
@@ -77,21 +92,29 @@ export default function SongsPage() {
     void reloadSongs()
   })
 
-  const filtered = useMemo(
-    () =>
-      songs.filter((song) => {
-        const artistNames = song.artists.map((a) => a.name).join(' ')
-        if (!matchesSearch(`${song.title} ${artistNames}`, search)) return false
-        if (artistFilter && !song.artists.some((a) => a.id === artistFilter)) return false
-        if (genreFilter && !song.genres.some((g) => g.id === genreFilter)) return false
-        if (moodFilter && !song.moods.some((m) => m.id === moodFilter)) return false
-        if (duetFilter === 'duet' && !song.is_duet) return false
-        if (duetFilter === 'solo' && song.is_duet) return false
-        if (minRating > 0 && song.rating < minRating) return false
-        return true
-      }),
-    [songs, search, artistFilter, genreFilter, moodFilter, duetFilter, minRating],
-  )
+  const filtered = useMemo(() => {
+    const list = songs.filter((song) => {
+      const artistNames = song.artists.map((a) => a.name).join(' ')
+      if (!matchesSearch(`${song.title} ${artistNames}`, search)) return false
+      if (artistFilter && !song.artists.some((a) => a.id === artistFilter)) return false
+      if (genreFilter && !song.genres.some((g) => g.id === genreFilter)) return false
+      if (moodFilter && !song.moods.some((m) => m.id === moodFilter)) return false
+      if (duetFilter === 'duet' && !song.is_duet) return false
+      if (duetFilter === 'solo' && song.is_duet) return false
+      if (minRating > 0 && song.rating < minRating) return false
+      return true
+    })
+    return sortSongs(list, sort)
+  }, [songs, search, artistFilter, genreFilter, moodFilter, duetFilter, minRating, sort])
+
+  const pickRandom = useCallback(() => {
+    if (filtered.length === 0) {
+      toast.error('Không có bài nào để chọn ngẫu nhiên.')
+      return
+    }
+    const idx = Math.floor(Math.random() * filtered.length)
+    setRandomSong(filtered[idx]!)
+  }, [filtered, toast])
 
   async function handleSave(input: SongInput) {
     if (modal.open && modal.song) {
@@ -129,7 +152,7 @@ export default function SongsPage() {
   }
 
   const selectClass =
-    'rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition hover:border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-white/20'
+    'w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition hover:border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-white/20'
 
   return (
     <div>
@@ -142,12 +165,22 @@ export default function SongsPage() {
             {songs.length} bài{filtered.length !== songs.length ? ` · đang hiện ${filtered.length}` : ''}
           </p>
         </div>
-        <button
-          onClick={() => setModal({ open: true, song: null })}
-          className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:bg-brand-600"
-        >
-          + Thêm bài hát
-        </button>
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+          <button
+            type="button"
+            onClick={pickRandom}
+            disabled={loading || filtered.length === 0}
+            className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/5"
+          >
+            🎲 Random
+          </button>
+          <button
+            onClick={() => setModal({ open: true, song: null })}
+            className="w-full rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:bg-brand-600 sm:w-auto"
+          >
+            + Thêm bài hát
+          </button>
+        </div>
       </div>
 
       <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -171,7 +204,7 @@ export default function SongsPage() {
             </button>
           )}
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
           <select
             value={artistFilter}
             onChange={(e) => setFilter('artist', e.target.value)}
@@ -229,11 +262,23 @@ export default function SongsPage() {
               </option>
             ))}
           </select>
+          <select
+            value={sort}
+            onChange={(e) => setFilter('sort', e.target.value)}
+            className={selectClass}
+            aria-label="Sắp xếp danh sách"
+          >
+            {SORT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
           {hasActiveFilters && (
             <button
               type="button"
               onClick={clearFilters}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
+              className="col-span-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-50 sm:col-auto dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
             >
               Xóa lọc
             </button>
@@ -304,6 +349,21 @@ export default function SongsPage() {
           onClose={() => setModal({ open: false })}
         />
       )}
+
+      {randomSong && (
+        <RandomSongModal
+          song={randomSong}
+          poolSize={filtered.length}
+          onReroll={pickRandom}
+          onOpenLyrics={() => {
+            setLyricsSong(randomSong)
+            setRandomSong(null)
+          }}
+          onClose={() => setRandomSong(null)}
+        />
+      )}
+
+      {lyricsSong && <LyricsFullscreen song={lyricsSong} onClose={() => setLyricsSong(null)} />}
     </div>
   )
 }

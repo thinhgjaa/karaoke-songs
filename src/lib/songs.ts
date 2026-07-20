@@ -1,5 +1,39 @@
 import type { Song, SongInput, Tag } from './types'
 
+export type SongSort =
+  | 'newest'
+  | 'oldest'
+  | 'title-asc'
+  | 'title-desc'
+  | 'rating-desc'
+  | 'rating-asc'
+
+const titleCollator = new Intl.Collator('vi', { sensitivity: 'base' })
+
+export function sortSongs(songs: Song[], sort: SongSort): Song[] {
+  const copy = [...songs]
+
+  switch (sort) {
+    case 'oldest':
+      return copy.sort((a, b) => a.created_at.localeCompare(b.created_at))
+    case 'title-asc':
+      return copy.sort((a, b) => titleCollator.compare(a.title, b.title))
+    case 'title-desc':
+      return copy.sort((a, b) => titleCollator.compare(b.title, a.title))
+    case 'rating-desc':
+      return copy.sort(
+        (a, b) => b.rating - a.rating || titleCollator.compare(a.title, b.title),
+      )
+    case 'rating-asc':
+      return copy.sort(
+        (a, b) => a.rating - b.rating || titleCollator.compare(a.title, b.title),
+      )
+    case 'newest':
+    default:
+      return copy.sort((a, b) => b.created_at.localeCompare(a.created_at))
+  }
+}
+
 function pickTags(tags: Tag[], ids: string[]): Tag[] {
   return tags.filter((t) => ids.includes(t.id))
 }
