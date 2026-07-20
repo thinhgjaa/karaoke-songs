@@ -65,18 +65,21 @@ export default function LyricsFullscreen({ song, initialDetails, onClose }: Lyri
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex flex-col bg-slate-950 text-slate-100"
+      className="fixed inset-0 z-[100] flex flex-col bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100"
       role="dialog"
       aria-modal="true"
       aria-labelledby="lyrics-fullscreen-title"
     >
-      <header className="flex shrink-0 items-start gap-3 border-b border-white/10 px-4 py-3 sm:px-6">
+      <header className="flex shrink-0 items-start gap-3 border-b border-slate-200 px-4 py-3 sm:px-6 dark:border-white/10">
         <div className="min-w-0 flex-1">
-          <h2 id="lyrics-fullscreen-title" className="truncate text-lg font-bold sm:text-xl">
+          <h2
+            id="lyrics-fullscreen-title"
+            className="truncate text-lg font-bold text-slate-900 sm:text-xl dark:text-white"
+          >
             {song.title}
           </h2>
           {artistNames && (
-            <p className="mt-0.5 truncate text-sm text-slate-400">{artistNames}</p>
+            <p className="mt-0.5 truncate text-sm text-slate-500 dark:text-slate-400">{artistNames}</p>
           )}
         </div>
         <StarRating value={song.rating} size="md" />
@@ -84,35 +87,35 @@ export default function LyricsFullscreen({ song, initialDetails, onClose }: Lyri
           type="button"
           onClick={onClose}
           aria-label="Đóng"
-          className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white"
+          className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
         >
           Đóng
         </button>
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
-        {loading && <p className="text-center text-slate-400">Đang tải lời bài hát…</p>}
-        {error && <p className="text-center text-rose-400">{error}</p>}
+        {loading && <p className="text-center text-slate-500 dark:text-slate-400">Đang tải lời bài hát…</p>}
+        {error && <p className="text-center text-rose-600 dark:text-rose-400">{error}</p>}
         {!loading && !error && details?.notes?.trim() && (
-          <div className="mx-auto mb-6 max-w-3xl rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-400/80">
+          <div className="mx-auto mb-6 max-w-3xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-500/30 dark:bg-amber-500/10">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400/80">
               Ghi chú
             </p>
-            <p className="whitespace-pre-wrap text-sm text-amber-100/90">{details.notes}</p>
+            <p className="whitespace-pre-wrap text-sm text-amber-900 dark:text-amber-100/90">{details.notes}</p>
           </div>
         )}
         {!loading && !error && hasLyrics && (
-          <p className="mx-auto max-w-3xl whitespace-pre-wrap text-center text-lg leading-relaxed sm:text-xl sm:leading-loose">
+          <p className="mx-auto max-w-3xl whitespace-pre-wrap text-center text-lg leading-relaxed text-slate-700 sm:text-xl sm:leading-loose dark:text-slate-200">
             {details!.lyrics}
           </p>
         )}
         {!loading && !error && !hasLyrics && (
-          <p className="text-center text-slate-500">Bài này chưa có lời bài hát.</p>
+          <p className="text-center text-slate-500 dark:text-slate-400">Bài này chưa có lời bài hát.</p>
         )}
       </div>
 
       {song.youtube_url && (
-        <footer className="shrink-0 border-t border-white/10 px-4 py-3 text-center sm:px-6">
+        <footer className="shrink-0 border-t border-slate-200 px-4 py-3 text-center sm:px-6 dark:border-white/10">
           <a
             href={song.youtube_url}
             target="_blank"
