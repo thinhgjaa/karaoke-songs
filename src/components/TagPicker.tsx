@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Tag } from '../lib/types'
+import { matchesSearch } from '../lib/text'
 
 interface TagPickerProps {
   label: string
@@ -12,23 +13,29 @@ interface TagPickerProps {
 
 const accentClasses = {
   violet: {
-    active: 'border-violet-500 bg-violet-500/20 text-violet-200',
-    ring: 'focus:border-violet-500 focus:ring-violet-500/30',
+    active: 'border-brand-500 bg-brand-50 text-brand-700',
+    ring: 'focus:border-brand-500 focus:ring-brand-500/20',
   },
   pink: {
-    active: 'border-pink-500 bg-pink-500/20 text-pink-200',
-    ring: 'focus:border-pink-500 focus:ring-pink-500/30',
+    active: 'border-pink-500 bg-pink-50 text-pink-700',
+    ring: 'focus:border-pink-500 focus:ring-pink-500/20',
   },
   sky: {
-    active: 'border-sky-500 bg-sky-500/20 text-sky-200',
-    ring: 'focus:border-sky-500 focus:ring-sky-500/30',
+    active: 'border-sky-500 bg-sky-50 text-sky-700',
+    ring: 'focus:border-sky-500 focus:ring-sky-500/20',
   },
 }
 
 export default function TagPicker({ label, tags, selectedIds, onToggle, onCreate, accent }: TagPickerProps) {
   const [newName, setNewName] = useState('')
   const [creating, setCreating] = useState(false)
+  const [filter, setFilter] = useState('')
   const classes = accentClasses[accent]
+
+  // Tag đã chọn luôn hiện để còn bỏ chọn được, dù không khớp từ khóa lọc
+  const visibleTags = tags.filter(
+    (tag) => selectedIds.includes(tag.id) || matchesSearch(tag.name, filter),
+  )
 
   async function handleCreate() {
     const name = newName.trim()
@@ -44,9 +51,31 @@ export default function TagPicker({ label, tags, selectedIds, onToggle, onCreate
 
   return (
     <div>
-      <span className="mb-1.5 block text-sm font-medium text-slate-300">{label}</span>
+      <span className="mb-1.5 block text-sm font-medium text-slate-700">{label}</span>
+      {tags.length > 6 && (
+        <div className="relative mb-2">
+          <input
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Gõ để lọc nhanh (không cần dấu)…"
+            className={`w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 pr-8 text-xs shadow-sm outline-none transition focus:ring-2 ${classes.ring}`}
+          />
+          {filter && (
+            <button
+              type="button"
+              onClick={() => setFilter('')}
+              aria-label="Xóa lọc"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            >
+              <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
       <div className="flex flex-wrap gap-1.5">
-        {tags.map((tag) => {
+        {visibleTags.map((tag) => {
           const active = selectedIds.includes(tag.id)
           return (
             <button
@@ -54,14 +83,17 @@ export default function TagPicker({ label, tags, selectedIds, onToggle, onCreate
               type="button"
               onClick={() => onToggle(tag.id)}
               className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-                active ? classes.active : 'border-white/10 bg-white/5 text-slate-400 hover:text-white'
+                active ? classes.active : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-800'
               }`}
             >
               {tag.name}
             </button>
           )
         })}
-        {tags.length === 0 && <span className="text-xs text-slate-500">Chưa có, thêm mới bên dưới.</span>}
+        {tags.length === 0 && <span className="text-xs text-slate-400">Chưa có, thêm mới bên dưới.</span>}
+        {tags.length > 0 && visibleTags.length === 0 && (
+          <span className="text-xs text-slate-400">Không có tag nào khớp "{filter}".</span>
+        )}
       </div>
       <div className="mt-2 flex gap-2">
         <input
@@ -74,13 +106,13 @@ export default function TagPicker({ label, tags, selectedIds, onToggle, onCreate
             }
           }}
           placeholder="Thêm mới nhanh…"
-          className={`w-full rounded-lg border border-white/10 bg-slate-900/60 px-3 py-1.5 text-xs outline-none transition focus:ring-2 ${classes.ring}`}
+          className={`w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs shadow-sm outline-none transition focus:ring-2 ${classes.ring}`}
         />
         <button
           type="button"
           onClick={() => void handleCreate()}
           disabled={creating || !newName.trim()}
-          className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/10 disabled:opacity-40"
+          className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
         >
           + Thêm
         </button>

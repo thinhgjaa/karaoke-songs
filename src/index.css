@@ -2,18 +2,26 @@
 
 @theme {
   --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+
+  /* Bảng màu tím kiểu ClickUp (#7B68EE) */
+  --color-brand-50: #f4f2fe;
+  --color-brand-100: #eae6fd;
+  --color-brand-200: #d7d0fb;
+  --color-brand-300: #b9abf7;
+  --color-brand-400: #9a83f2;
+  --color-brand-500: #7b68ee;
+  --color-brand-600: #6a4de0;
+  --color-brand-700: #5a3dc4;
+  --color-brand-800: #4a33a0;
+  --color-brand-900: #3e2d80;
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
-  @apply bg-slate-950 text-slate-100 font-sans antialiased;
-  background-image:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(120, 60, 220, 0.25), transparent),
-    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(236, 72, 153, 0.12), transparent);
-  background-attachment: fixed;
+  @apply bg-[#fafbfc] text-slate-800 font-sans antialiased;
   min-height: 100dvh;
 }
 
@@ -59,16 +67,17 @@ body {
 .skeleton {
   background: linear-gradient(
     90deg,
-    rgb(255 255 255 / 0.04) 25%,
-    rgb(255 255 255 / 0.1) 50%,
-    rgb(255 255 255 / 0.04) 75%
+    rgb(15 23 42 / 0.05) 25%,
+    rgb(15 23 42 / 0.1) 50%,
+    rgb(15 23 42 / 0.05) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.6s linear infinite;
 }
 
+/* Gradient thương hiệu kiểu logo ClickUp: tím → hồng */
 .text-gradient {
-  background: linear-gradient(90deg, #a78bfa, #f472b6, #fbbf24);
+  background: linear-gradient(90deg, #7b68ee, #f857a6);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -82,6 +91,6 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgb(71 85 105 / 0.5);
+  background: rgb(148 163 184 / 0.5);
   border-radius: 8px;
 }

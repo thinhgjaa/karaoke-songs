@@ -22,20 +22,20 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-brand-50 via-white to-pink-50 px-4">
       <div className="w-full max-w-sm animate-fade-up">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-600 to-fuchsia-600 text-4xl shadow-2xl shadow-violet-900/50">
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-brand-500 to-fuchsia-500 text-4xl shadow-xl shadow-brand-500/30">
             🎤
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
             Kho bài hát <span className="text-gradient">Karaoke</span>
           </h1>
-          <p className="mt-2 text-sm text-slate-400">Đăng nhập để tiếp tục</p>
+          <p className="mt-2 text-sm text-slate-500">Đăng nhập để tiếp tục</p>
         </div>
 
         {!isSupabaseConfigured && (
-          <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300">
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
             Chưa cấu hình Supabase. Hãy tạo file <code className="font-mono">.env</code> từ{' '}
             <code className="font-mono">.env.example</code> và điền URL + anon key (xem README).
           </div>
@@ -43,9 +43,9 @@ export default function LoginPage() {
 
         <form
           onSubmit={handleSubmit}
-          className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur"
+          className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60"
         >
-          <label className="mb-1.5 block text-sm font-medium text-slate-300" htmlFor="email">
+          <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="email">
             Email
           </label>
           <input
@@ -55,11 +55,11 @@ export default function LoginPage() {
             autoComplete="username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mb-4 w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30"
+            className="mb-4 w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
             placeholder="ban@email.com"
           />
 
-          <label className="mb-1.5 block text-sm font-medium text-slate-300" htmlFor="password">
+          <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="password">
             Mật khẩu
           </label>
           <input
@@ -69,12 +69,12 @@ export default function LoginPage() {
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mb-5 w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30"
+            className="mb-5 w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
             placeholder="••••••••"
           />
 
           {error && (
-            <div className="mb-4 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-300">
+            <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
               {error}
             </div>
           )}
@@ -82,13 +82,13 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-900/40 transition hover:brightness-110 disabled:opacity-50"
+            className="w-full rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:bg-brand-600 disabled:opacity-50"
           >
             {submitting ? 'Đang đăng nhập…' : 'Đăng nhập'}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-slate-500">
+        <p className="mt-6 text-center text-xs text-slate-400">
           Ứng dụng cá nhân · Dữ liệu được bảo vệ bằng Supabase RLS
         </p>
       </div>
