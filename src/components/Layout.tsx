@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
+import ScrollToTopButton from './ScrollToTopButton'
 
 const navItems = [
   { to: '/', end: true, icon: '🎵', label: 'Bài hát' },
@@ -227,6 +228,8 @@ export default function Layout() {
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 md:px-8">
           <Outlet />
         </main>
+
+        <ScrollToTopButton />
       </div>
     </div>
   )
