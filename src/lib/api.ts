@@ -29,7 +29,7 @@ export async function fetchSongs(): Promise<Song[]> {
   return (data as SongRow[]) ?? []
 }
 
-export async function fetchSongDetails(id: string): Promise<Pick<Song, 'lyrics' | 'notes'>> {
+export async function fetchSongDetails(id: string): Promise<{ lyrics: string; notes: string }> {
   const { data, error } = await supabase.from('songs').select('lyrics, notes').eq('id', id).single()
   if (error) throw error
   return { lyrics: data.lyrics ?? '', notes: data.notes ?? '' }

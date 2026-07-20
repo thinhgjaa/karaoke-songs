@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState, type Dispatch, type SetStateAction } from 'react'
 import { Outlet } from 'react-router-dom'
 import { createTag, deleteTag, fetchTags, renameTag, type TagTable } from '../lib/api'
 import type { Tag } from '../lib/types'
@@ -21,9 +21,9 @@ const TagsContext = createContext<TagsContextValue | null>(null)
 
 function setTableTags(
   table: TagTable,
-  setArtists: (v: Tag[]) => void,
-  setGenres: (v: Tag[]) => void,
-  setMoods: (v: Tag[]) => void,
+  setArtists: Dispatch<SetStateAction<Tag[]>>,
+  setGenres: Dispatch<SetStateAction<Tag[]>>,
+  setMoods: Dispatch<SetStateAction<Tag[]>>,
   updater: (prev: Tag[]) => Tag[],
 ) {
   if (table === 'artists') setArtists((prev) => updater(prev))
