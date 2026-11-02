@@ -90,6 +90,20 @@ function MenuButton({ open, onClick }: { open: boolean; onClick: () => void }) {
   )
 }
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+
+let globalDeferredPrompt: BeforeInstallPromptEvent | null = null
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault()
+    globalDeferredPrompt = e as BeforeInstallPromptEvent
+  })
+}
+
 interface SidebarPanelProps {
   onNavigate?: () => void
   showClose?: boolean
@@ -112,6 +126,39 @@ function SidebarPanel({ onNavigate, showClose, onClose }: SidebarPanelProps) {
     } finally {
       setBackingUp(false)
     }
+  }
+
+  async function handleInstallApp() {
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      Boolean((navigator as unknown as { standalone?: boolean }).standalone)
+
+    if (isStandalone) {
+      toast.info('Ứng dụng đã được cài đặt và đang chạy ở chế độ App!')
+      return
+    }
+
+    if (globalDeferredPrompt) {
+      try {
+        await globalDeferredPrompt.prompt()
+        const choice = await globalDeferredPrompt.userChoice
+        if (choice.outcome === 'accepted') {
+          toast.success('Đang cài đặt ứng dụng vào màn hình chính!')
+          globalDeferredPrompt = null
+        }
+      } catch {
+        /* user dismissed prompt */
+      }
+      return
+    }
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    if (isIOS) {
+      toast.info('Trên iPhone/iPad: Bấm nút Chia sẻ ⬆ (dưới thanh Safari) ➔ chọn "Thêm vào MH chính"')
+      return
+    }
+
+    toast.info('Để cài đặt: Bấm biểu tượng Cài đặt trên thanh địa chỉ hoặc Menu ⋮ ➔ "Cài đặt ứng dụng"')
   }
 
   return (
@@ -162,6 +209,14 @@ function SidebarPanel({ onNavigate, showClose, onClose }: SidebarPanelProps) {
           title="Xuất toàn bộ bài hát, lời, ghi chú ra file .json dự phòng"
         >
           <span aria-hidden="true">💾</span> {backingUp ? 'Đang xuất sao lưu…' : 'Sao lưu dữ liệu (.json)'}
+        </button>
+        <button
+          type="button"
+          onClick={() => void handleInstallApp()}
+          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white"
+          title="Cài đặt ứng dụng về màn hình chính điện thoại hoặc máy tính"
+        >
+          <span aria-hidden="true">📲</span> Cài đặt ứng dụng
         </button>
         <div className="flex items-center justify-between gap-2 rounded-lg px-3 py-2">
           <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Giao diện</span>

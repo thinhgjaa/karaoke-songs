@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { createSong, deleteSong, downloadBackup, fetchSongs, updateSong, updateSongRating } from '../lib/api'
+import { createSong, deleteSong, fetchSongs, updateSong, updateSongRating } from '../lib/api'
 import { songFromInput, sortSongs, syncSongTags, type SongSort } from '../lib/songs'
 import { matchesSearch } from '../lib/text'
 import type { Song, SongInput } from '../lib/types'
@@ -38,7 +38,6 @@ export default function SongsPage() {
   const [randomSong, setRandomSong] = useState<Song | null>(null)
   const [lyricsSong, setLyricsSong] = useState<Song | null>(null)
   const [queueExpanded, setQueueExpanded] = useState(true)
-  const [exportingBackup, setExportingBackup] = useState(false)
   const [queueIds, setQueueIds] = useState<string[]>(() => {
     try {
       const raw = localStorage.getItem(QUEUE_STORAGE_KEY)
@@ -199,18 +198,6 @@ export default function SongsPage() {
     }
   }
 
-  async function handleExportBackup() {
-    setExportingBackup(true)
-    try {
-      const count = await downloadBackup()
-      toast.success(`Đã xuất bản sao lưu ${count} bài hát (.json)`)
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Không tải được bản sao lưu.')
-    } finally {
-      setExportingBackup(false)
-    }
-  }
-
   const selectClass =
     'w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition hover:border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-white/20'
 
@@ -225,32 +212,23 @@ export default function SongsPage() {
             {songs.length} bài{filtered.length !== songs.length ? ` · đang hiện ${filtered.length}` : ''}
           </p>
         </div>
-          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-            <button
-              type="button"
-              onClick={pickRandom}
-              disabled={loading || filtered.length === 0}
-              className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-initial dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/5"
-            >
-              🎲 Random
-            </button>
-            <button
-              type="button"
-              onClick={() => void handleExportBackup()}
-              disabled={exportingBackup || songs.length === 0}
-              className="rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/5"
-              title="Tải bản sao lưu toàn bộ bài hát, lời, ghi chú (.json) về máy"
-            >
-              {exportingBackup ? 'Đang xuất…' : '💾 Sao lưu'}
-            </button>
-            <button
-              onClick={() => setModal({ open: true, song: null })}
-              className="w-full rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:bg-brand-600 sm:w-auto"
-            >
-              + Thêm bài hát
-            </button>
-          </div>
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+          <button
+            type="button"
+            onClick={pickRandom}
+            disabled={loading || filtered.length === 0}
+            className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/5"
+          >
+            🎲 Random
+          </button>
+          <button
+            onClick={() => setModal({ open: true, song: null })}
+            className="w-full rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:bg-brand-600 sm:w-auto"
+          >
+            + Thêm bài hát
+          </button>
         </div>
+      </div>
 
         {queuedSongs.length > 0 && (
           <section className="mb-5 rounded-xl border border-brand-200 bg-brand-50/50 p-4 dark:border-brand-500/30 dark:bg-brand-500/10">
