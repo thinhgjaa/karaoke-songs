@@ -20,6 +20,7 @@
 
 html {
   color-scheme: light;
+  scroll-behavior: smooth;
 }
 
 html.dark {
@@ -115,10 +116,17 @@ html.dark .skeleton {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgb(148 163 184 / 0.5);
+  background: rgb(123 104 238 / 0.45);
   border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(123 104 238 / 0.75);
 }
 html.dark::-webkit-scrollbar-thumb,
 html.dark *::-webkit-scrollbar-thumb {
-  background: rgb(71 85 105 / 0.5);
+  background: rgb(123 104 238 / 0.45);
+}
+html.dark::-webkit-scrollbar-thumb:hover,
+html.dark *::-webkit-scrollbar-thumb:hover {
+  background: rgb(123 104 238 / 0.75);
 }

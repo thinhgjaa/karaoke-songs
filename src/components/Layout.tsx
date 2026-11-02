@@ -158,6 +158,7 @@ export default function Layout() {
 
   useEffect(() => {
     setMobileOpen(false)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [location.pathname])
 
   useEffect(() => {

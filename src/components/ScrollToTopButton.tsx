@@ -1,39 +1,57 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type RefObject } from 'react'
 
-const SHOW_AFTER_PX = 300
+const SHOW_AFTER_PX = 160
 
-export default function ScrollToTopButton() {
+interface ScrollToTopButtonProps {
+  /** Nếu truyền containerRef thì theo dõi và cuộn phần tử đó thay vì window */
+  containerRef?: RefObject<HTMLElement | null>
+}
+
+export default function ScrollToTopButton({ containerRef }: ScrollToTopButtonProps = {}) {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
+    const target = containerRef?.current
+
     function onScroll() {
-      setVisible(window.scrollY > SHOW_AFTER_PX)
+      const scrollTop = target ? target.scrollTop : window.scrollY || document.documentElement.scrollTop
+      setVisible(scrollTop > SHOW_AFTER_PX)
     }
 
     onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+    const eventTarget: HTMLElement | Window = target ?? window
+    eventTarget.addEventListener('scroll', onScroll, { passive: true })
+    return () => eventTarget.removeEventListener('scroll', onScroll)
+  }, [containerRef])
 
   if (!visible) return null
+
+  function scrollToTop() {
+    if (containerRef?.current) {
+      containerRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
 
   return (
     <button
       type="button"
-      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-      aria-label="Lên đầu trang"
-      title="Lên đầu trang"
-      className="animate-pop-in fixed bottom-6 right-4 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-lg shadow-slate-900/10 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600 md:right-8 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300 dark:shadow-black/30 dark:hover:border-brand-500/40 dark:hover:bg-brand-500/15 dark:hover:text-brand-300"
+      onClick={scrollToTop}
+      aria-label="Cuộn về đầu trang"
+      title="Cuộn về đầu trang"
+      className="animate-pop-in fixed bottom-6 right-4 z-40 flex items-center gap-1.5 rounded-full bg-brand-500 px-3.5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-brand-500/35 transition hover:-translate-y-0.5 hover:bg-brand-600 active:translate-y-0 md:right-8"
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path
           d="M12 19V5M12 5l-6 6M12 5l6 6"
           stroke="currentColor"
-          strokeWidth="2"
+          strokeWidth="2.2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
       </svg>
+      <span>Đầu trang</span>
     </button>
   )
 }

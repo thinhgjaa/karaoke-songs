@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { fetchSongDetails } from '../lib/api'
 import type { Song } from '../lib/types'
+import ScrollToTopButton from './ScrollToTopButton'
 import StarRating from './StarRating'
 
 interface LyricsFullscreenProps {
@@ -13,6 +14,7 @@ export default function LyricsFullscreen({ song, initialDetails, onClose }: Lyri
   const [details, setDetails] = useState(initialDetails ?? null)
   const [loading, setLoading] = useState(!initialDetails)
   const [error, setError] = useState<string | null>(null)
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null)
   const artistNames = song.artists.map((a) => a.name).join(', ')
 
   useEffect(() => {
@@ -93,7 +95,7 @@ export default function LyricsFullscreen({ song, initialDetails, onClose }: Lyri
         </button>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
         {loading && <p className="text-center text-slate-500 dark:text-slate-400">Đang tải lời bài hát…</p>}
         {error && <p className="text-center text-rose-600 dark:text-rose-400">{error}</p>}
         {!loading && !error && details?.notes?.trim() && (
@@ -112,6 +114,7 @@ export default function LyricsFullscreen({ song, initialDetails, onClose }: Lyri
         {!loading && !error && !hasLyrics && (
           <p className="text-center text-slate-500 dark:text-slate-400">Bài này chưa có lời bài hát.</p>
         )}
+        <ScrollToTopButton containerRef={scrollContainerRef} />
       </div>
 
       {song.youtube_url && (
