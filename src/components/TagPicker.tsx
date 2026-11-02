@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Tag } from '../lib/types'
-import { matchesSearch } from '../lib/text'
+import { capitalizeWords, matchesSearch } from '../lib/text'
 
 interface TagPickerProps {
   label: string
@@ -41,7 +41,7 @@ export default function TagPicker({ label, tags, selectedIds, onToggle, onCreate
   )
 
   async function handleCreate() {
-    const name = newName.trim()
+    const name = capitalizeWords(newName)
     if (!name) return
     setCreating(true)
     try {
@@ -105,6 +105,7 @@ export default function TagPicker({ label, tags, selectedIds, onToggle, onCreate
         <input
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
+          onBlur={() => setNewName((prev) => capitalizeWords(prev))}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault()

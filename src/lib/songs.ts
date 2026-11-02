@@ -1,3 +1,4 @@
+import { capitalizeWords } from './text'
 import type { Song, SongInput, Tag } from './types'
 
 export type SongSort =
@@ -50,7 +51,7 @@ export function songFromInput(
   return {
     id,
     created_at,
-    title: input.title.trim(),
+    title: capitalizeWords(input.title),
     youtube_url: input.youtube_url.trim(),
     lyrics: input.lyrics,
     notes: input.notes,

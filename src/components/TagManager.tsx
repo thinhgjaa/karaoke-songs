@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import type { TagTable } from '../lib/api'
-import { matchesSearch } from '../lib/text'
+import { capitalizeWords, matchesSearch } from '../lib/text'
 import type { Tag } from '../lib/types'
 import { useConfirm } from '../context/ConfirmContext'
 import { useTags } from '../context/TagsContext'
@@ -71,7 +71,7 @@ export default function TagManager({ table, pageTitle, gradientWord, hint, accen
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault()
-    const name = newName.trim()
+    const name = capitalizeWords(newName)
     if (!name) return
     const ok = await run(() => createTagAndCache(table, name), `Đã thêm "${name}"`)
     if (ok) setNewName('')
@@ -109,6 +109,7 @@ export default function TagManager({ table, pageTitle, gradientWord, hint, accen
           <input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
+            onBlur={() => setNewName((prev) => capitalizeWords(prev))}
             placeholder="Tên mới…"
             className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-white/10 dark:bg-slate-900/60"
           />
@@ -189,15 +190,16 @@ export default function TagManager({ table, pageTitle, gradientWord, hint, accen
                     <input
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
+                      onBlur={() => setEditName((prev) => capitalizeWords(prev))}
                       autoFocus
                       className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm shadow-sm outline-none focus:border-brand-500 dark:border-white/10 dark:bg-slate-900/60"
                     />
                     <button
                       onClick={() => {
-                        const trimmed = editName.trim()
+                        const formatted = capitalizeWords(editName)
                         void run(
-                          () => renameTagAndCache(table, tag.id, trimmed).then(() => setEditingId(null)),
-                          `Đã đổi tên thành "${trimmed}"`,
+                          () => renameTagAndCache(table, tag.id, formatted).then(() => setEditingId(null)),
+                          `Đã đổi tên thành "${formatted}"`,
                         )
                       }}
                       disabled={!editName.trim()}

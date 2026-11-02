@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { fetchSongDetails } from '../lib/api'
+import { capitalizeWords } from '../lib/text'
 import type { Song, SongInput, Tag } from '../lib/types'
 import StarRating from './StarRating'
 import TagPicker from './TagPicker'
@@ -90,12 +91,14 @@ export default function SongFormModal({
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!title.trim()) return
+    const formattedTitle = capitalizeWords(title)
+    if (!formattedTitle) return
+    setTitle(formattedTitle)
     setSaving(true)
     setError(null)
     try {
       await onSave({
-        title,
+        title: formattedTitle,
         youtube_url: youtubeUrl,
         lyrics,
         notes,
@@ -141,9 +144,10 @@ export default function SongFormModal({
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              onBlur={() => setTitle((prev) => capitalizeWords(prev))}
               required
               autoFocus
-              placeholder="Ví dụ: Nồng nàn Hà Nội"
+              placeholder="Ví dụ: Nồng Nàn Hà Nội"
               className={inputClass}
             />
           </div>

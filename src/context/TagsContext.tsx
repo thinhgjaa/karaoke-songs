@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type Dispatch, type SetStateAction } from 'react'
 import { Outlet } from 'react-router-dom'
 import { createTag, deleteTag, fetchTags, renameTag, type TagTable } from '../lib/api'
+import { capitalizeWords } from '../lib/text'
 import type { Tag } from '../lib/types'
 import { useAuth } from './AuthContext'
 import { useMidnightPing } from '../hooks/useMidnightPing'
@@ -81,7 +82,7 @@ export function TagsProvider() {
 
   const createTagAndCache = useCallback(
     async (table: TagTable, name: string) => {
-      const tag = await createTag(table, name)
+      const tag = await createTag(table, capitalizeWords(name))
       setTableTags(table, setArtists, setGenres, setMoods, (prev) =>
         [...prev, tag].sort((a, b) => a.name.localeCompare(b.name, 'vi')),
       )
@@ -91,10 +92,10 @@ export function TagsProvider() {
   )
 
   const renameTagAndCache = useCallback(async (table: TagTable, id: string, name: string) => {
-    await renameTag(table, id, name.trim())
-    const trimmed = name.trim()
+    const formatted = capitalizeWords(name)
+    await renameTag(table, id, formatted)
     setTableTags(table, setArtists, setGenres, setMoods, (prev) =>
-      prev.map((t) => (t.id === id ? { ...t, name: trimmed } : t)),
+      prev.map((t) => (t.id === id ? { ...t, name: formatted } : t)),
     )
   }, [])
 

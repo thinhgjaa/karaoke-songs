@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { capitalizeWords } from './text'
 import type { Song, SongInput, Tag } from './types'
 
 export type TagTable = 'artists' | 'genres' | 'moods'
@@ -44,7 +45,7 @@ export async function fetchTags(table: TagTable): Promise<Tag[]> {
 export async function createTag(table: TagTable, name: string): Promise<Tag> {
   const { data, error } = await supabase
     .from(table)
-    .insert({ name: name.trim() })
+    .insert({ name: capitalizeWords(name) })
     .select('id, name, created_at')
     .single()
   if (error) throw error
@@ -52,7 +53,7 @@ export async function createTag(table: TagTable, name: string): Promise<Tag> {
 }
 
 export async function renameTag(table: TagTable, id: string, name: string): Promise<void> {
-  const { error } = await supabase.from(table).update({ name: name.trim() }).eq('id', id)
+  const { error } = await supabase.from(table).update({ name: capitalizeWords(name) }).eq('id', id)
   if (error) throw error
 }
 
@@ -93,7 +94,7 @@ async function setSongTags(songId: string, input: SongInput): Promise<void> {
 
 function songFields(input: SongInput) {
   return {
-    title: input.title.trim(),
+    title: capitalizeWords(input.title),
     youtube_url: input.youtube_url.trim(),
     lyrics: input.lyrics,
     notes: input.notes,

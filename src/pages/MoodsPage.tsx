@@ -6,7 +6,7 @@ export default function MoodsPage() {
       table="moods"
       pageTitle="Quản lý"
       gradientWord="Tâm trạng"
-      hint="Ví dụ: Sôi động, Trầm lắng, Tình cảm, Vui nhộn…"
+      hint="Ví dụ: Sôi Động, Trầm Lắng, Tình Cảm, Vui Nhộn…"
       accent="pink"
     />
   )
