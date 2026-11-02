@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Tag } from '../lib/types'
-import { capitalizeWords, matchesSearch } from '../lib/text'
+import { capitalizeWords, matchesSearch, normalizeVietnamese } from '../lib/text'
 
 interface TagPickerProps {
   label: string
@@ -33,6 +33,7 @@ export default function TagPicker({ label, tags, selectedIds, onToggle, onCreate
   const [newName, setNewName] = useState('')
   const [creating, setCreating] = useState(false)
   const [filter, setFilter] = useState('')
+  const [error, setError] = useState<string | null>(null)
   const classes = accentClasses[accent]
 
   // Tag đã chọn luôn hiện để còn bỏ chọn được, dù không khớp từ khóa lọc
@@ -43,11 +44,27 @@ export default function TagPicker({ label, tags, selectedIds, onToggle, onCreate
   async function handleCreate() {
     const name = capitalizeWords(newName)
     if (!name) return
+    setError(null)
+
+    // Nếu tag đã tồn tại sẵn thì chọn luôn thay vì gọi API tạo trùng
+    const existing = tags.find(
+      (t) => t.name.toLocaleLowerCase('vi') === name.toLocaleLowerCase('vi') ||
+        normalizeVietnamese(t.name) === normalizeVietnamese(name),
+    )
+    if (existing) {
+      if (!selectedIds.includes(existing.id)) onToggle(existing.id)
+      setNewName('')
+      return
+    }
+
     setCreating(true)
     try {
       const tag = await onCreate(name)
       setNewName('')
       if (!selectedIds.includes(tag.id)) onToggle(tag.id)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Không thêm được.'
+      setError(msg.includes('duplicate key') ? 'Tên này đã tồn tại.' : msg)
     } finally {
       setCreating(false)
     }
@@ -86,11 +103,10 @@ export default function TagPicker({ label, tags, selectedIds, onToggle, onCreate
               key={tag.id}
               type="button"
               onClick={() => onToggle(tag.id)}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-                active
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition ${active
                   ? classes.active
                   : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:text-white'
-              }`}
+                }`}
             >
               {tag.name}
             </button>
@@ -104,7 +120,10 @@ export default function TagPicker({ label, tags, selectedIds, onToggle, onCreate
       <div className="mt-2 flex gap-2">
         <input
           value={newName}
-          onChange={(e) => setNewName(e.target.value)}
+          onChange={(e) => {
+            setNewName(e.target.value)
+            if (error) setError(null)
+          }}
           onBlur={() => setNewName((prev) => capitalizeWords(prev))}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
@@ -124,6 +143,7 @@ export default function TagPicker({ label, tags, selectedIds, onToggle, onCreate
           + Thêm
         </button>
       </div>
+      {error && <p className="mt-1 text-xs text-rose-500">{error}</p>}
     </div>
   )
 }

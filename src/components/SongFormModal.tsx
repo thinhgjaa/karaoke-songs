@@ -1,12 +1,14 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { fetchSongDetails } from '../lib/api'
-import { capitalizeWords } from '../lib/text'
+import { capitalizeWords, normalizeVietnamese } from '../lib/text'
 import type { Song, SongInput, Tag } from '../lib/types'
+import { fetchYoutubeTitle, getYoutubeVideoId } from '../lib/youtube'
 import StarRating from './StarRating'
 import TagPicker from './TagPicker'
 
 interface SongFormModalProps {
   song: Song | null
+  existingSongs: Song[]
   artists: Tag[]
   genres: Tag[]
   moods: Tag[]
@@ -19,6 +21,7 @@ interface SongFormModalProps {
 
 export default function SongFormModal({
   song,
+  existingSongs,
   artists,
   genres,
   moods,
@@ -40,6 +43,31 @@ export default function SongFormModal({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [detailsLoading, setDetailsLoading] = useState(false)
+  const [fetchingYtTitle, setFetchingYtTitle] = useState(false)
+
+  // Kiểm tra bài hát trùng tên trong kho
+  const duplicateSong = useMemo(() => {
+    const norm = normalizeVietnamese(title)
+    if (!norm) return null
+    return existingSongs.find(
+      (s) => s.id !== song?.id && normalizeVietnamese(s.title) === norm,
+    ) ?? null
+  }, [title, existingSongs, song?.id])
+
+  const hasValidYoutubeUrl = useMemo(() => Boolean(getYoutubeVideoId(youtubeUrl)), [youtubeUrl])
+
+  async function handleFillTitleFromYoutube(urlToFetch: string, onlyIfEmpty = false) {
+    if (!getYoutubeVideoId(urlToFetch)) return
+    setFetchingYtTitle(true)
+    try {
+      const ytTitle = await fetchYoutubeTitle(urlToFetch)
+      if (ytTitle) {
+        setTitle((prev) => (onlyIfEmpty && prev.trim() ? prev : ytTitle))
+      }
+    } finally {
+      setFetchingYtTitle(false)
+    }
+  }
 
   useEffect(() => {
     if (!song?.id || (song.lyrics !== undefined && song.notes !== undefined)) return
@@ -150,6 +178,11 @@ export default function SongFormModal({
               placeholder="Ví dụ: Nồng Nàn Hà Nội"
               className={inputClass}
             />
+            {duplicateSong && (
+              <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
+                ⚠️ Trong kho đã có bài "{duplicateSong.title}".
+              </p>
+            )}
           </div>
 
           <TagPicker
@@ -180,10 +213,30 @@ export default function SongFormModal({
           />
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Link YouTube / beat karaoke</label>
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Link YouTube / beat karaoke
+              </label>
+              {hasValidYoutubeUrl && (
+                <button
+                  type="button"
+                  disabled={fetchingYtTitle}
+                  onClick={() => void handleFillTitleFromYoutube(youtubeUrl, false)}
+                  className="text-xs font-medium text-brand-600 transition hover:text-brand-700 disabled:opacity-50 dark:text-brand-400 dark:hover:text-brand-300"
+                >
+                  {fetchingYtTitle ? 'Đang lấy tên…' : '✨ Lấy tên từ YouTube'}
+                </button>
+              )}
+            </div>
             <input
               value={youtubeUrl}
-              onChange={(e) => setYoutubeUrl(e.target.value)}
+              onChange={(e) => {
+                const nextUrl = e.target.value
+                setYoutubeUrl(nextUrl)
+                if (!title.trim() && getYoutubeVideoId(nextUrl)) {
+                  void handleFillTitleFromYoutube(nextUrl, true)
+                }
+              }}
               type="url"
               placeholder="https://www.youtube.com/watch?v=…"
               className={inputClass}

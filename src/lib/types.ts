@@ -2,6 +2,7 @@ export interface Tag {
   id: string
   name: string
   created_at?: string
+  song_count?: number
 }
 
 export interface Song {

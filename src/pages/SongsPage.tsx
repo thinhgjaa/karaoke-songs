@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { createSong, deleteSong, fetchSongs, updateSong } from '../lib/api'
+import { createSong, deleteSong, fetchSongs, updateSong, updateSongRating } from '../lib/api'
 import { songFromInput, sortSongs, syncSongTags, type SongSort } from '../lib/songs'
 import { matchesSearch } from '../lib/text'
 import type { Song, SongInput } from '../lib/types'
@@ -15,6 +15,8 @@ import { useMidnightPing } from '../hooks/useMidnightPing'
 
 type ModalState = { open: false } | { open: true; song: Song | null }
 
+const QUEUE_STORAGE_KEY = 'karaoke_song_queue'
+
 const SORT_OPTIONS: { value: SongSort; label: string }[] = [
   { value: 'newest', label: 'Mới nhất' },
   { value: 'oldest', label: 'Cũ nhất' },
@@ -25,7 +27,7 @@ const SORT_OPTIONS: { value: SongSort; label: string }[] = [
 ]
 
 export default function SongsPage() {
-  const { artists, genres, moods, loading: tagsLoading, createTagAndCache } = useTags()
+  const { artists, genres, moods, loading: tagsLoading, createTagAndCache, refreshTags } = useTags()
   const toast = useToast()
   const { confirm } = useConfirm()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -35,6 +37,37 @@ export default function SongsPage() {
   const [modal, setModal] = useState<ModalState>({ open: false })
   const [randomSong, setRandomSong] = useState<Song | null>(null)
   const [lyricsSong, setLyricsSong] = useState<Song | null>(null)
+  const [queueExpanded, setQueueExpanded] = useState(true)
+  const [queueIds, setQueueIds] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(QUEUE_STORAGE_KEY)
+      const parsed = raw ? (JSON.parse(raw) as unknown) : []
+      return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : []
+    } catch {
+      return []
+    }
+  })
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(queueIds))
+    } catch {
+      /* ignore quota errors */
+    }
+  }, [queueIds])
+
+  const toggleQueue = useCallback((songId: string) => {
+    setQueueIds((prev) => (prev.includes(songId) ? prev.filter((id) => id !== songId) : [...prev, songId]))
+  }, [])
+
+  const queuedSongs = useMemo(
+    () =>
+      queueIds.flatMap((id) => {
+        const found = songs.find((s) => s.id === id)
+        return found ? [found] : []
+      }),
+    [queueIds, songs],
+  )
 
   const search = searchParams.get('q') ?? ''
   const artistFilter = searchParams.get('artist') ?? ''
@@ -118,7 +151,7 @@ export default function SongsPage() {
 
   async function handleSave(input: SongInput) {
     if (modal.open && modal.song) {
-      await updateSong(modal.song.id, input)
+      await updateSong(modal.song.id, input, modal.song)
       setSongs((prev) =>
         prev.map((s) =>
           s.id === modal.song!.id
@@ -131,6 +164,18 @@ export default function SongsPage() {
       const { id, created_at } = await createSong(input)
       setSongs((prev) => [songFromInput(id, created_at, input, artists, genres, moods), ...prev])
       toast.success(`Đã thêm "${input.title.trim()}"`)
+    }
+    void refreshTags()
+  }
+
+  async function handleRate(song: Song, rating: number) {
+    const prevRating = song.rating
+    setSongs((prev) => prev.map((s) => (s.id === song.id ? { ...s, rating } : s)))
+    try {
+      await updateSongRating(song.id, rating)
+    } catch (err) {
+      setSongs((prev) => prev.map((s) => (s.id === song.id ? { ...s, rating: prevRating } : s)))
+      toast.error(err instanceof Error ? err.message : 'Không cập nhật được đánh giá.')
     }
   }
 
@@ -145,7 +190,9 @@ export default function SongsPage() {
     try {
       await deleteSong(song.id)
       setSongs((prev) => prev.filter((s) => s.id !== song.id))
+      setQueueIds((prev) => prev.filter((id) => id !== song.id))
       toast.success(`Đã xóa "${song.title}"`)
+      void refreshTags()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Không xóa được bài hát.')
     }
@@ -182,6 +229,76 @@ export default function SongsPage() {
           </button>
         </div>
       </div>
+
+      {queuedSongs.length > 0 && (
+        <section className="mb-5 rounded-xl border border-brand-200 bg-brand-50/50 p-4 dark:border-brand-500/30 dark:bg-brand-500/10">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setQueueExpanded((v) => !v)}
+              className="flex items-center gap-2 text-sm font-bold text-brand-700 dark:text-brand-200"
+            >
+              <span>🎤 Danh sách chờ hát hôm nay ({queuedSongs.length} bài)</span>
+              <span className="text-xs font-normal text-brand-500">
+                {queueExpanded ? '▲ Thu gọn' : '▼ Mở ra'}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setQueueIds([])}
+              className="text-xs font-medium text-slate-500 transition hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-300"
+            >
+              Xóa danh sách chờ
+            </button>
+          </div>
+          {queueExpanded && (
+            <ul className="mt-3 divide-y divide-brand-200/60 dark:divide-white/10">
+              {queuedSongs.map((qSong, idx) => (
+                <li key={qSong.id} className="flex flex-wrap items-center justify-between gap-2 py-2 first:pt-0 last:pb-0">
+                  <div className="min-w-0 flex-1">
+                    <span className="mr-2 inline-block text-xs font-bold text-brand-600 dark:text-brand-400">
+                      #{idx + 1}
+                    </span>
+                    <span className="font-medium text-slate-900 dark:text-white">{qSong.title}</span>
+                    {qSong.artists.length > 0 && (
+                      <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">
+                        · {qSong.artists.map((a) => a.name).join(', ')}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setLyricsSong(qSong)}
+                      className="rounded-lg bg-white px-2.5 py-1 text-xs font-medium text-brand-700 shadow-sm transition hover:bg-brand-100 dark:bg-white/10 dark:text-brand-200 dark:hover:bg-white/20"
+                    >
+                      Lời hát
+                    </button>
+                    {qSong.youtube_url && (
+                      <a
+                        href={qSong.youtube_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-lg bg-red-600 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-red-500"
+                      >
+                        ▶ YouTube
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => toggleQueue(qSong.id)}
+                      title="Đánh dấu đã hát xong"
+                      className="rounded-lg px-2 py-1 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100 dark:text-emerald-300 dark:hover:bg-emerald-500/20"
+                    >
+                      ✓ Đã hát
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         <div className="relative w-full sm:flex-1">
@@ -329,6 +446,13 @@ export default function SongsPage() {
               key={song.id}
               song={song}
               index={index}
+              inQueue={queueIds.includes(song.id)}
+              onToggleQueue={() => toggleQueue(song.id)}
+              onRate={(rating) => void handleRate(song, rating)}
+              onFilterArtist={(id) => setFilter('artist', artistFilter === id ? '' : id)}
+              onFilterGenre={(id) => setFilter('genre', genreFilter === id ? '' : id)}
+              onFilterMood={(id) => setFilter('mood', moodFilter === id ? '' : id)}
+              onFilterDuet={() => setFilter('duet', duetFilter === 'duet' ? '' : 'duet')}
               onEdit={() => setModal({ open: true, song })}
               onDelete={() => void handleDelete(song)}
             />
@@ -339,6 +463,7 @@ export default function SongsPage() {
       {modal.open && (
         <SongFormModal
           song={modal.song}
+          existingSongs={songs}
           artists={artists}
           genres={genres}
           moods={moods}
@@ -354,6 +479,8 @@ export default function SongsPage() {
         <RandomSongModal
           song={randomSong}
           poolSize={filtered.length}
+          inQueue={queueIds.includes(randomSong.id)}
+          onToggleQueue={() => toggleQueue(randomSong.id)}
           onReroll={pickRandom}
           onOpenLyrics={() => {
             setLyricsSong(randomSong)

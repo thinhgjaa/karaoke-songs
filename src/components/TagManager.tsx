@@ -14,7 +14,7 @@ export interface TagManagerProps {
   accent: 'violet' | 'pink' | 'sky'
 }
 
-type SortField = 'name' | 'time'
+type SortField = 'name' | 'count' | 'time'
 type SortDir = 'asc' | 'desc'
 
 const selectClass =
@@ -46,6 +46,8 @@ export default function TagManager({ table, pageTitle, gradientWord, hint, accen
       let cmp = 0
       if (sortField === 'name') {
         cmp = a.name.localeCompare(b.name, 'vi')
+      } else if (sortField === 'count') {
+        cmp = (a.song_count ?? 0) - (b.song_count ?? 0) || a.name.localeCompare(b.name, 'vi')
       } else {
         cmp = new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime()
       }
@@ -78,9 +80,10 @@ export default function TagManager({ table, pageTitle, gradientWord, hint, accen
   }
 
   async function handleDeleteTag(tag: Tag) {
+    const countInfo = tag.song_count ? ` (đang gắn ở ${tag.song_count} bài hát)` : ''
     const ok = await confirm({
       title: `Xóa ${gradientWord.toLowerCase()}`,
-      message: `Xóa "${tag.name}"? Các bài hát sẽ tự bỏ nhãn này.`,
+      message: `Xóa "${tag.name}"${countInfo}? Các bài hát sẽ tự bỏ nhãn này.`,
       confirmLabel: 'Xóa',
       danger: true,
     })
@@ -150,11 +153,12 @@ export default function TagManager({ table, pageTitle, gradientWord, hint, accen
               className={selectClass}
             >
               <option value="name">Sắp xếp theo tên</option>
+              <option value="count">Sắp xếp theo số bài hát</option>
               <option value="time">Sắp xếp theo thời gian</option>
             </select>
             <select value={sortDir} onChange={(e) => setSortDir(e.target.value as SortDir)} className={selectClass}>
-              <option value="asc">Tăng dần (A→Z / cũ→mới)</option>
-              <option value="desc">Giảm dần (Z→A / mới→cũ)</option>
+              <option value="asc">Tăng dần (A→Z / ít→nhiều)</option>
+              <option value="desc">Giảm dần (Z→A / nhiều→ít)</option>
             </select>
           </div>
         </div>
@@ -216,40 +220,45 @@ export default function TagManager({ table, pageTitle, gradientWord, hint, accen
                   </>
                 ) : (
                   <>
-                    <div className="min-w-0">
-                      <span className={`inline-block rounded-full border px-3 py-1 text-sm ${badgeClass}`}>
-                        {tag.name}
-                      </span>
-                      {sortField === 'time' && tag.created_at && (
-                        <p className="mt-1 pl-1 text-xs text-slate-400">
-                          {new Date(tag.created_at).toLocaleString('vi-VN')}
-                        </p>
-                      )}
-                    </div>
-                    <div className="ml-auto flex shrink-0 gap-1">
-                      <button
-                        onClick={() => {
-                          setEditingId(tag.id)
-                          setEditName(tag.name)
-                        }}
-                        className="rounded-lg px-2.5 py-1 text-xs text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-white"
-                      >
-                        Đổi tên
-                      </button>
-                      <button
-                        onClick={() => void handleDeleteTag(tag)}
-                        className="rounded-lg px-2.5 py-1 text-xs text-slate-500 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
-                      >
-                        Xóa
-                      </button>
-                    </div>
-                  </>
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <span className={`inline-block rounded-full border px-3 py-1 text-sm ${badgeClass}`}>
+                          {tag.name}
+                        </span>
+                        {typeof tag.song_count === 'number' && (
+                          <span className="text-xs text-slate-400 dark:text-slate-500">
+                            {tag.song_count} bài
+                          </span>
+                        )}
+                        {sortField === 'time' && tag.created_at && (
+                        <span className="text-xs text-slate-400">
+                          · {new Date(tag.created_at).toLocaleDateString('vi-VN')}
+                        </span>
+                        )}
+                      </div>
+                      <div className="ml-auto flex shrink-0 gap-1">
+                        <button
+                          onClick={() => {
+                            setEditingId(tag.id)
+                            setEditName(tag.name)
+                          }}
+                          className="rounded-lg px-2.5 py-1 text-xs text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-white"
+                        >
+                          Đổi tên
+                        </button>
+                        <button
+                          onClick={() => void handleDeleteTag(tag)}
+                          className="rounded-lg px-2.5 py-1 text-xs text-slate-500 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
+                        >
+                          Xóa
+                        </button>
+                      </div>
+                    </>
                 )}
-              </li>
+                  </li>
             ))}
-          </ul>
-        )}
-      </section>
+              </ul>
+            )}
+          </section>
     </div>
   )
 }

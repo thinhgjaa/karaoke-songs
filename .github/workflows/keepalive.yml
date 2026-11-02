@@ -1,48 +1,75 @@
 name: Keep Supabase awake
 
 # Mỗi đêm 0:00 giờ Việt Nam (UTC+7 = 17:00 UTC ngày hôm trước)
-# ping REST API để project Supabase free không bị ngủ vì ít truy cập.
+# ping Auth + REST API (PostgreSQL) để project Supabase free không bị tạm dừng vì ít truy cập.
 on:
   schedule:
     - cron: '0 17 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: keepalive
+  cancel-in-progress: true
+
 jobs:
   ping:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - name: Ping Supabase
+      - name: Ping Supabase Auth & Database
         env:
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
-          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
-            echo "Thiếu secrets VITE_SUPABASE_URL hoặc VITE_SUPABASE_ANON_KEY"
+          set -euo pipefail
+
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_ANON_KEY:-}" ]; then
+            echo "::error::Thiếu secrets VITE_SUPABASE_URL hoặc VITE_SUPABASE_ANON_KEY trong GitHub Settings -> Secrets and variables -> Actions"
             exit 1
           fi
 
-          # Health check Auth (không cần JWT người dùng)
-          code=$(curl -sS -o /tmp/sb-health.txt -w "%{http_code}" \
-            "${SUPABASE_URL%/}/auth/v1/health" \
+          BASE_URL="${SUPABASE_URL%/}"
+          CURL_OPTS=(-sS --retry 3 --retry-delay 2 --max-time 20)
+
+          # 1. Health check Supabase Auth
+          auth_code=$(curl "${CURL_OPTS[@]}" -o /tmp/sb-health.txt -w "%{http_code}" \
+            "${BASE_URL}/auth/v1/health" \
             -H "apikey: ${SUPABASE_ANON_KEY}")
 
-          echo "Auth health HTTP $code"
+          echo "Auth health HTTP ${auth_code}"
           cat /tmp/sb-health.txt || true
-          echo
+          echo ""
 
-          # Nhẹ nhàng chạm bảng songs (RLS có thể trả 401/empty — vẫn tính là ping thành công nếu API phản hồi)
-          code2=$(curl -sS -o /tmp/sb-songs.txt -w "%{http_code}" \
-            "${SUPABASE_URL%/}/rest/v1/songs?select=id&limit=1" \
-            -H "apikey: ${SUPABASE_ANON_KEY}" \
-            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
-            -H "Accept: application/json")
-
-          echo "Songs ping HTTP $code2"
-          cat /tmp/sb-songs.txt || true
-
-          if [ "$code" != "200" ]; then
-            echo "Auth health thất bại (kỳ vọng 200)"
+          if [ "${auth_code}" != "200" ]; then
+            echo "::error::Auth health thất bại (HTTP ${auth_code}, kỳ vọng 200)"
             exit 1
           fi
 
-          echo "Ping OK lúc $(date -u +%Y-%m-%dT%H:%M:%SZ) UTC"
+          # 2. Chạm trực tiếp PostgREST -> PostgreSQL
+          # Vì bảng songs đã REVOKE quyền của role anon để bảo mật nên Postgres sẽ thực thi
+          # kiểm tra quyền và trả về HTTP 401 (code 42501) hoặc 200 — cả hai đều chứng tỏ
+          # PostgREST và PostgreSQL đang thức và phản hồi bình thường.
+          AUTH_HEADER=()
+          if [[ "${SUPABASE_ANON_KEY}" == eyJ* ]]; then
+            AUTH_HEADER=(-H "Authorization: Bearer ${SUPABASE_ANON_KEY}")
+          fi
+
+          db_code=$(curl "${CURL_OPTS[@]}" -o /tmp/sb-songs.txt -w "%{http_code}" \
+            "${BASE_URL}/rest/v1/songs?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            "${AUTH_HEADER[@]}" \
+            -H "Accept: application/json")
+
+          echo "Database REST ping HTTP ${db_code}"
+          cat /tmp/sb-songs.txt || true
+          echo ""
+
+          if [ "${db_code}" != "200" ] && [ "${db_code}" != "401" ]; then
+            echo "::error::Database REST ping thất bại (HTTP ${db_code}, kỳ vọng 200 hoặc 401 từ PostgreSQL)"
+            exit 1
+          fi
+
+          echo "✅ Ping thành công lúc $(date -u +%Y-%m-%dT%H:%M:%SZ) UTC"
