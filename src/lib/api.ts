@@ -113,81 +113,125 @@ export async function deleteTag(table: TagTable, id: string): Promise<void> {
     return sortedA.every((val, idx) => val === sortedB[idx])
   }
 
-    async function setSongTags(songId: string, input: SongInput, previousSong?: Song): Promise<void> {
-      const artistsChanged = !previousSong || !sameIds(previousSong.artists.map((a) => a.id), input.artistIds)
-      const genresChanged = !previousSong || !sameIds(previousSong.genres.map((g) => g.id), input.genreIds)
-      const moodsChanged = !previousSong || !sameIds(previousSong.moods.map((m) => m.id), input.moodIds)
+  async function setSongTags(songId: string, input: SongInput, previousSong?: Song): Promise<void> {
+    const artistsChanged = !previousSong || !sameIds(previousSong.artists.map((a) => a.id), input.artistIds)
+    const genresChanged = !previousSong || !sameIds(previousSong.genres.map((g) => g.id), input.genreIds)
+    const moodsChanged = !previousSong || !sameIds(previousSong.moods.map((m) => m.id), input.moodIds)
 
-      const deleteTasks = []
-      if (artistsChanged) deleteTasks.push(supabase.from('song_artists').delete().eq('song_id', songId))
-      if (genresChanged) deleteTasks.push(supabase.from('song_genres').delete().eq('song_id', songId))
-      if (moodsChanged) deleteTasks.push(supabase.from('song_moods').delete().eq('song_id', songId))
+    const deleteTasks = []
+    if (artistsChanged) deleteTasks.push(supabase.from('song_artists').delete().eq('song_id', songId))
+    if (genresChanged) deleteTasks.push(supabase.from('song_genres').delete().eq('song_id', songId))
+    if (moodsChanged) deleteTasks.push(supabase.from('song_moods').delete().eq('song_id', songId))
 
-      if (deleteTasks.length > 0) {
-        const deleteResults = await Promise.all(deleteTasks)
-        for (const res of deleteResults) {
+    if (deleteTasks.length > 0) {
+      const deleteResults = await Promise.all(deleteTasks)
+      for (const res of deleteResults) {
+        if (res.error) throw res.error
+      }
+    }
+
+      const insertTasks = []
+      if (artistsChanged && input.artistIds.length > 0) {
+        insertTasks.push(
+          supabase.from('song_artists').insert(input.artistIds.map((artist_id) => ({ song_id: songId, artist_id }))),
+        )
+      }
+      if (genresChanged && input.genreIds.length > 0) {
+        insertTasks.push(
+          supabase.from('song_genres').insert(input.genreIds.map((genre_id) => ({ song_id: songId, genre_id }))),
+        )
+      }
+      if (moodsChanged && input.moodIds.length > 0) {
+        insertTasks.push(
+          supabase.from('song_moods').insert(input.moodIds.map((mood_id) => ({ song_id: songId, mood_id }))),
+        )
+      }
+
+      if (insertTasks.length > 0) {
+        const insertResults = await Promise.all(insertTasks)
+        for (const res of insertResults) {
           if (res.error) throw res.error
         }
       }
+    }
 
-        const insertTasks = []
-        if (artistsChanged && input.artistIds.length > 0) {
-          insertTasks.push(
-            supabase.from('song_artists').insert(input.artistIds.map((artist_id) => ({ song_id: songId, artist_id }))),
-          )
-        }
-          if (genresChanged && input.genreIds.length > 0) {
-            insertTasks.push(
-              supabase.from('song_genres').insert(input.genreIds.map((genre_id) => ({ song_id: songId, genre_id }))),
-            )
-          }
-          if (moodsChanged && input.moodIds.length > 0) {
-            insertTasks.push(
-              supabase.from('song_moods').insert(input.moodIds.map((mood_id) => ({ song_id: songId, mood_id }))),
-            )
-          }
+    function songFields(input: SongInput) {
+      return {
+        title: capitalizeWords(input.title),
+        youtube_url: input.youtube_url.trim(),
+        lyrics: input.lyrics,
+        notes: input.notes,
+        rating: input.rating,
+        is_duet: input.is_duet,
+      }
+    }
 
-          if (insertTasks.length > 0) {
-            const insertResults = await Promise.all(insertTasks)
-            for (const res of insertResults) {
-              if (res.error) throw res.error
-            }
-          }
-        }
+    export async function createSong(input: SongInput): Promise<{ id: string; created_at: string }> {
+      const { data, error } = await supabase.from('songs').insert(songFields(input)).select('id, created_at').single()
+      if (error) throw error
+      await setSongTags(data.id, input)
+      songDetailsCache.set(data.id, { lyrics: input.lyrics, notes: input.notes })
+      return data
+    }
 
-        function songFields(input: SongInput) {
-          return {
-            title: capitalizeWords(input.title),
-            youtube_url: input.youtube_url.trim(),
-            lyrics: input.lyrics,
-            notes: input.notes,
-            rating: input.rating,
-            is_duet: input.is_duet,
-          }
-        }
+  export async function updateSong(id: string, input: SongInput, previousSong?: Song): Promise<void> {
+    const { error } = await supabase.from('songs').update(songFields(input)).eq('id', id)
+    if (error) throw error
+    await setSongTags(id, input, previousSong)
+    songDetailsCache.set(id, { lyrics: input.lyrics, notes: input.notes })
+  }
 
-        export async function createSong(input: SongInput): Promise<{ id: string; created_at: string }> {
-          const { data, error } = await supabase.from('songs').insert(songFields(input)).select('id, created_at').single()
-          if (error) throw error
-          await setSongTags(data.id, input)
-          songDetailsCache.set(data.id, { lyrics: input.lyrics, notes: input.notes })
-          return data
-        }
+  export async function updateSongRating(id: string, rating: number): Promise<void> {
+    const { error } = await supabase.from('songs').update({ rating }).eq('id', id)
+    if (error) throw error
+  }
 
-          export async function updateSong(id: string, input: SongInput, previousSong?: Song): Promise<void> {
-            const { error } = await supabase.from('songs').update(songFields(input)).eq('id', id)
-            if (error) throw error
-            await setSongTags(id, input, previousSong)
-            songDetailsCache.set(id, { lyrics: input.lyrics, notes: input.notes })
-          }
+  export async function deleteSong(id: string): Promise<void> {
+    const { error } = await supabase.from('songs').delete().eq('id', id)
+    if (error) throw error
+    songDetailsCache.delete(id)
+  }
 
-          export async function updateSongRating(id: string, rating: number): Promise<void> {
-            const { error } = await supabase.from('songs').update({ rating }).eq('id', id)
-            if (error) throw error
-          }
+  /** Tải toàn bộ danh sách bài hát (kèm lời và ghi chú) + toàn bộ tags để lưu file .json dự phòng */
+  export async function downloadBackup(): Promise<number> {
+    const [songsRes, artists, genres, moods] = await Promise.all([
+      supabase
+        .from('songs')
+        .select('id, title, youtube_url, lyrics, notes, rating, is_duet, created_at, artists(id, name), genres(id, name), moods(id, name)')
+        .order('created_at', { ascending: false }),
+      fetchTags('artists'),
+      fetchTags('genres'),
+      fetchTags('moods'),
+    ])
 
-          export async function deleteSong(id: string): Promise<void> {
-            const { error } = await supabase.from('songs').delete().eq('id', id)
-            if (error) throw error
-            songDetailsCache.delete(id)
-          }
+    if (songsRes.error) throw songsRes.error
+    const songs = songsRes.data ?? []
+
+    const payload = {
+      app: 'karaoke-songs',
+      version: '1.0',
+      exported_at: new Date().toISOString(),
+      total_songs: songs.length,
+      songs,
+      tags: {
+        artists,
+        genres,
+        moods,
+      },
+    }
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: 'application/json;charset=utf-8',
+    })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    const dateStr = new Date().toISOString().slice(0, 10)
+    a.href = url
+    a.download = `karaoke-backup-${dateStr}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+
+    return songs.length
+  }

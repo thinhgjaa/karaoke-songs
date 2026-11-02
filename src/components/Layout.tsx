@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
+import { useToast } from '../context/ToastContext'
+import { downloadBackup } from '../lib/api'
 import ScrollToTopButton from './ScrollToTopButton'
 
 const navItems = [
@@ -96,6 +98,21 @@ interface SidebarPanelProps {
 
 function SidebarPanel({ onNavigate, showClose, onClose }: SidebarPanelProps) {
   const { signOut } = useAuth()
+  const toast = useToast()
+  const [backingUp, setBackingUp] = useState(false)
+
+  async function handleBackup() {
+    setBackingUp(true)
+    try {
+      const count = await downloadBackup()
+      toast.success(`Đã xuất bản sao lưu ${count} bài hát (.json)`)
+      onNavigate?.()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Không tải được bản sao lưu.')
+    } finally {
+      setBackingUp(false)
+    }
+  }
 
   return (
     <>
@@ -137,6 +154,15 @@ function SidebarPanel({ onNavigate, showClose, onClose }: SidebarPanelProps) {
       </nav>
 
       <div className="space-y-1 border-t border-slate-100 p-3 dark:border-white/5">
+        <button
+          type="button"
+          onClick={() => void handleBackup()}
+          disabled={backingUp}
+          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white"
+          title="Xuất toàn bộ bài hát, lời, ghi chú ra file .json dự phòng"
+        >
+          <span aria-hidden="true">💾</span> {backingUp ? 'Đang xuất sao lưu…' : 'Sao lưu dữ liệu (.json)'}
+        </button>
         <div className="flex items-center justify-between gap-2 rounded-lg px-3 py-2">
           <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Giao diện</span>
           <ThemeToggle />
